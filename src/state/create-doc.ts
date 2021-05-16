@@ -30,16 +30,16 @@ export function makeCreateDoc<DBE, SE>({
   onReset,
   onCreated,
 }: {
-  colName: string;
-  schema: {
-    cols: Dictionary<Dictionary<Field>>;
+  readonly colName: string;
+  readonly schema: {
+    readonly cols: Dictionary<Dictionary<Field>>;
   };
-  dbpSetDoc: DbpSetDoc<DBE>;
-  dbpGetNewDocId: DbpGetNewDocId<DBE>;
-  spUploadFile: SpUploadFile<SE>;
-  ownerless?: true;
-  onReset?: OnReset;
-  onCreated?: OnCreated<DocKey>;
+  readonly dbpSetDoc: DbpSetDoc<DBE>;
+  readonly dbpGetNewDocId: DbpGetNewDocId<DBE>;
+  readonly spUploadFile: SpUploadFile<SE>;
+  readonly ownerless?: true;
+  readonly onReset?: OnReset;
+  readonly onCreated?: OnCreated<DocKey>;
 }): Observable<CreateDocState<DBE, SE>> {
   const createDocState = makeSubject<CreateDocState<DBE, SE>>({ state: 'initializing' });
 

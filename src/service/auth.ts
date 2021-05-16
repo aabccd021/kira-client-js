@@ -28,21 +28,21 @@ export function initAuth<AE, DBE, SE, SIO, UC>({
   dbpGetNewDocId,
   spUploadFile,
 }: {
-  onAuthStateChanged: ApOnStateChanged<AE, UC>;
-  signIn: SignIn<SIO>;
-  signOut: ApSignOut;
-  userCredToDefaultDoc: UserCredToDefaultDoc<UC>;
-  userCredToId: ApUserCredToId<UC>;
-  schema: {
-    userCol: string;
-    cols: Dictionary<Dictionary<Field>>;
+  readonly onAuthStateChanged: ApOnStateChanged<AE, UC>;
+  readonly signIn: SignIn<SIO>;
+  readonly signOut: ApSignOut;
+  readonly userCredToDefaultDoc: UserCredToDefaultDoc<UC>;
+  readonly userCredToId: ApUserCredToId<UC>;
+  readonly schema: {
+    readonly userCol: string;
+    readonly cols: Dictionary<Dictionary<Field>>;
   };
-  dbpSetDoc: DbpSetDoc<DBE>;
-  dbpReadDoc: DbpReadDoc<DBE>;
-  dbpGetNewDocId: DbpGetNewDocId<DBE>;
-  spUploadFile: SpUploadFile<SE>;
+  readonly dbpSetDoc: DbpSetDoc<DBE>;
+  readonly dbpReadDoc: DbpReadDoc<DBE>;
+  readonly dbpGetNewDocId: DbpGetNewDocId<DBE>;
+  readonly spUploadFile: SpUploadFile<SE>;
 }): Unsubscribe {
-  // eslint-disable-next-line ts-immutable/no-let
+  // eslint-disable-next-line functional/no-let
   let unsubscribeDocListener: Unsubscribe | undefined = undefined;
 
   const unsubscribeAuthListener = onAuthStateChanged({

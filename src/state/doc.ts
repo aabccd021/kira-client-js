@@ -20,15 +20,15 @@ export function makeDoc<DBE, SE>({
   dbpGetNewDocId,
   spUploadFile,
 }: {
-  collection: string;
-  id?: string;
-  schema: {
-    cols: Dictionary<Dictionary<Field>>;
+  readonly collection: string;
+  readonly id?: string;
+  readonly schema: {
+    readonly cols: Dictionary<Dictionary<Field>>;
   };
-  dbpReadDoc: DbpReadDoc<DBE>;
-  dbpSetDoc: DbpSetDoc<DBE>;
-  dbpGetNewDocId: DbpGetNewDocId<DBE>;
-  spUploadFile: SpUploadFile<SE>;
+  readonly dbpReadDoc: DbpReadDoc<DBE>;
+  readonly dbpSetDoc: DbpSetDoc<DBE>;
+  readonly dbpGetNewDocId: DbpGetNewDocId<DBE>;
+  readonly spUploadFile: SpUploadFile<SE>;
 }): Observable<DocState<DBE>> {
   return {
     initialState: id ? { state: 'initializing' } : { state: 'keyIsEmpty' },

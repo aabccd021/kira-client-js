@@ -1,33 +1,33 @@
 type Dictionary<T> = Record<string, T>;
 
 export type StringField = {
-  type: 'string';
+  readonly type: 'string';
 };
 
 export type CountField = {
-  type: 'count';
-  countedCol: string;
-  groupByRef: string;
+  readonly type: 'count';
+  readonly countedCol: string;
+  readonly groupByRef: string;
 };
 
 export type ImageField = {
-  type: 'image';
+  readonly type: 'image';
 };
 
 export type CreationTimeField = {
-  type: 'creationTime';
+  readonly type: 'creationTime';
 };
 
 export type OwnerField = {
-  type: 'owner';
-  syncFields?: Dictionary<true>;
+  readonly type: 'owner';
+  readonly syncFields?: Dictionary<true>;
 };
 
 // TODO: rename to ref, use interop
 export type ReferenceField = {
-  type: 'ref';
-  refCol: string;
-  syncFields?: Dictionary<true>;
+  readonly type: 'ref';
+  readonly refCol: string;
+  readonly syncFields?: Dictionary<true>;
 };
 
 // TODO: add version, e.g. 'Field_Base'
@@ -40,6 +40,6 @@ export type Field =
   | StringField;
 
 export type Schema = {
-  userCol: string;
-  cols: Dictionary<Dictionary<Field>>;
+  readonly userCol: string;
+  readonly cols: Dictionary<Dictionary<Field>>;
 };

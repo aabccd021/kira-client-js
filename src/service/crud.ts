@@ -16,14 +16,14 @@ import {
 } from '../types';
 
 export async function readDoc<DBE, SE>(args: {
-  key: DocKey;
-  schema: {
-    cols: Dictionary<Dictionary<Field>>;
+  readonly key: DocKey;
+  readonly schema: {
+    readonly cols: Dictionary<Dictionary<Field>>;
   };
-  dbpReadDoc: DbpReadDoc<DBE>;
-  dbpSetDoc: DbpSetDoc<DBE>;
-  dbpGetNewDocId: DbpGetNewDocId<DBE>;
-  spUploadFile: SpUploadFile<SE>;
+  readonly dbpReadDoc: DbpReadDoc<DBE>;
+  readonly dbpSetDoc: DbpSetDoc<DBE>;
+  readonly dbpGetNewDocId: DbpGetNewDocId<DBE>;
+  readonly spUploadFile: SpUploadFile<SE>;
 }): Promise<void> {
   const { key, schema, dbpReadDoc, dbpSetDoc, dbpGetNewDocId, spUploadFile } = args;
 
@@ -82,15 +82,15 @@ export async function createDoc<DBE, SE>({
   dbpGetNewDocId,
   spUploadFile,
 }: {
-  colName: string;
-  id?: string;
-  ocDocData: OCDocData;
-  schema: {
-    cols: Dictionary<Dictionary<Field>>;
+  readonly colName: string;
+  readonly id?: string;
+  readonly ocDocData: OCDocData;
+  readonly schema: {
+    readonly cols: Dictionary<Dictionary<Field>>;
   };
-  dbpSetDoc: DbpSetDoc<DBE>;
-  dbpGetNewDocId: DbpGetNewDocId<DBE>;
-  spUploadFile: SpUploadFile<SE>;
+  readonly dbpSetDoc: DbpSetDoc<DBE>;
+  readonly dbpGetNewDocId: DbpGetNewDocId<DBE>;
+  readonly spUploadFile: SpUploadFile<SE>;
 }): Promise<Either<DocKey, CreateDocError<DBE, SE>>> {
   const colFields = schema.cols[colName];
   if (colFields === undefined) {

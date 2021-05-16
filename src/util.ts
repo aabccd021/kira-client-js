@@ -24,7 +24,7 @@ export function eProps<T, E>(obj: Dictionary<Either<T, E>>): Either<Dictionary<T
 
 export function ppProps<T>(obj: Dictionary<Promise<T>>): Promise<Dictionary<T>> {
   return Promise.all(
-    Object.entries(obj).map(([key, val]) => val.then((v) => [key, v] as [string, T]))
+    Object.entries(obj).map(([key, val]) => val.then((v) => [key, v] as readonly [string, T]))
   ).then((entries) => Object.fromEntries(entries));
 }
 

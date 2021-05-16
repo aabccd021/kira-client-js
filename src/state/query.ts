@@ -6,8 +6,8 @@ export function makeQuery<DBC, DBE>({
   dbpQuery,
   query,
 }: {
-  query: Query;
-  dbpQuery: DbpQuery<DBC, DBE>;
+  readonly query: Query;
+  readonly dbpQuery: DbpQuery<DBC, DBE>;
 }): Observable<QueryState<DBE>> {
   return {
     initialState: { state: 'initializing' },

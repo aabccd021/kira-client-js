@@ -6,9 +6,9 @@ export async function fetchQuery<DBC, DBE>({
   query,
   cursor,
 }: {
-  query: Query;
-  dbpQuery: DbpQuery<DBC, DBE>;
-  cursor?: DBC;
+  readonly query: Query;
+  readonly dbpQuery: DbpQuery<DBC, DBE>;
+  readonly cursor?: DBC;
 }): Promise<void> {
   const cached = getQueryState(query);
 
