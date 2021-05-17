@@ -1,6 +1,7 @@
 {
   "extends": "./tsconfig.json",
-  "module": "ES6",
+  "module": "es6",
+  "target": "es5",
   "exclude": [
     "test"
   ]
