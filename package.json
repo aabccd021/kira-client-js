@@ -1,6 +1,6 @@
 {
   "name": "kira-client",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Kira Client for Javascript",
   "repository": "git@github.com:aabccd021/kira-client-js.git",
   "author": "aabccd021 <aabccd021@gmail.com>",
