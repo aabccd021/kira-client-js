@@ -5,6 +5,7 @@
   "repository": "git@github.com:aabccd021/kira-client-js.git",
   "author": "aabccd021 <aabccd021@gmail.com>",
   "license": "MIT",
+  "main": "lib/index.js",
   "module": "lib/index.js",
   "types": "lib/index.d.ts",
   "files": [
