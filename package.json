@@ -10,12 +10,12 @@
   ],
   "exports": {
     "./": {
-      "default": "./dist/mjs/index.js",
+      "default": "./dist/jjs/index.js",
       "node": "./dist/cjs/index.js"
     }
   },
   "scripts": {
-    "build": "rm -rf dist && tsc --build tsconfig.esm.json && tsc --build tsconfig.cjs.json",
+    "build": "rm -rf dist && tsc --build tsconfig.mjs.json && tsc --build tsconfig.cjs.json",
     "lint": "eslint . --ext ts",
     "test": "jest --coverage"
   },
