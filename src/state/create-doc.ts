@@ -1,7 +1,7 @@
 import { Schema_1 } from 'kira-core';
 
 import { getAuth, makeSubject, onAuthChange, subjectToObservable } from '../cache';
-import { createDoc } from '../service';
+import { createDoc_1 } from '../service';
 import {
   CreateDocState,
   DbpGetNewDocId,
@@ -56,7 +56,7 @@ export function makeCreateDoc<DBE, SE>({
       reset,
       create: async (docData) => {
         createDocState.set({ state: 'creating', reset });
-        const createdDocKey = await createDoc({
+        const createdDocKey = await createDoc_1({
           colName,
           ocDocData: docData,
           schema,

@@ -14,7 +14,30 @@ import {
   Unsubscribe,
   UserCredToDefaultDoc,
 } from '../types';
-import { createDoc, readDoc } from './crud';
+import { createDoc_1, readDoc } from './crud';
+
+// export function initAuth_3<AE, DBE, SE, SIO, UC>({
+//   onAuthStateChanged,
+//   signIn,
+//   signOut,
+//   userCredToDefaultDoc,
+//   userCredToId,
+//   schema,
+//   dbpSetDoc,
+//   dbpReadDoc,
+//   dbpGetNewDocId,
+// }: {
+//   readonly schema: Schema_3;
+//   readonly onAuthStateChanged: ApOnStateChanged<AE, UC>;
+//   readonly signIn: ApSignIn<SIO>;
+//   readonly signOut: ApSignOut;
+//   readonly userCredToDefaultDoc: UserCredToDefaultDoc<UC>;
+//   readonly userCredToId: ApUserCredToId<UC>;
+//   readonly dbpSetDoc: DbpSetDoc<DBE>;
+//   readonly dbpReadDoc: DbpReadDoc<DBE>;
+//   readonly dbpGetNewDocId: DbpGetNewDocId<DBE>;
+// }): Unsubscribe {
+// }
 
 export function initAuth<AE, DBE, SE, SIO, UC>({
   onAuthStateChanged,
@@ -61,7 +84,7 @@ export function initAuth<AE, DBE, SE, SIO, UC>({
         }
 
         if (cachedUser.state === 'notExists') {
-          createDoc({
+          createDoc_1({
             colName: userDocKey.collection,
             id,
             ocDocData: userCredToDefaultDoc(userCred),

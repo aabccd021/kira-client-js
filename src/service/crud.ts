@@ -1,7 +1,7 @@
 import { Schema_1 } from 'kira-core';
 
 import { getDoc, setDoc } from '../cache';
-import { ocToOcrDocData } from '../doc-data/oc-to-ocr-docdata';
+import { ocToOcrDocData_1 } from '../doc-data/oc-to-ocr-docdata';
 import { ocrToDocData } from '../doc-data/ocr-to-docdata';
 import {
   CreateDocError,
@@ -47,7 +47,7 @@ export async function readDoc<DBE, SE>(args: {
               state: 'creating',
               refresh: () => readDoc(args),
             });
-            createDoc({
+            createDoc_1({
               colName: key.collection,
               id: key.id,
               ocDocData,
@@ -70,8 +70,26 @@ export async function readDoc<DBE, SE>(args: {
   setDoc(key, newCached);
 }
 
+// export async function createDoc_3<DBE, SE>({
+//   colName,
+//   id,
+//   ocDocData,
+//   schema,
+//   dbpSetDoc,
+//   dbpGetNewDocId,
+// }: {
+//   readonly colName: string;
+//   readonly id?: string;
+//   readonly ocDocData: OCDocData;
+//   readonly schema: Schema_3;
+//   readonly dbpSetDoc: DbpSetDoc<DBE>;
+//   readonly dbpGetNewDocId: DbpGetNewDocId<DBE>;
+//   readonly spUploadFile: SpUploadFile<SE>;
+// }): Promise<Either<DocKey, CreateDocError<DBE, SE>>> {
+// }
+
 // TODO: add to list on create doc
-export async function createDoc<DBE, SE>({
+export async function createDoc_1<DBE, SE>({
   colName,
   id,
   ocDocData,
@@ -103,7 +121,7 @@ export async function createDoc<DBE, SE>({
     };
   }
 
-  const processedDocData = await ocToOcrDocData<DBE, SE>({
+  const processedDocData = await ocToOcrDocData_1<DBE, SE>({
     colFields,
     colName,
     spUploadFile,
