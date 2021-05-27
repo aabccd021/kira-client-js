@@ -1,14 +1,19 @@
 import assertNever from 'assert-never';
+import {
+  CountField,
+  CreationTimeField,
+  Dictionary,
+  Field_1,
+  ImageField,
+  OwnerField,
+  RefField,
+  StringField,
+} from 'kira-core';
 
 import { getAuth, getDoc } from '../cache';
 import {
-  CountField,
   CreateDocError,
-  CreationTimeField,
-  Dictionary,
   Either,
-  Field,
-  ImageField,
   OCDocData,
   OCRCountField,
   OCRCreationTimeField,
@@ -18,10 +23,7 @@ import {
   OCROwnerField,
   OCRReferenceField,
   OCRStringField,
-  OwnerField,
-  ReferenceField,
   SpUploadFile,
-  StringField,
 } from '../types';
 import { eProps, mapValues, ppProps } from '../util';
 
@@ -109,7 +111,7 @@ function handleOwnerField<DBE, SE>(
 }
 
 async function handleReferenceField<DBE, SE>(
-  field: ReferenceField,
+  field: RefField,
   { colName, fieldValue }: HandleFieldContext<SE>
 ): Promise<Either<OCRReferenceField, CreateDocError<DBE, SE>>> {
   const { id } = fieldValue as { readonly id: unknown };
@@ -154,7 +156,7 @@ export async function ocToOcrDocData<DBE, SE>({
   spUploadFile,
 }: {
   readonly colName: string;
-  readonly colFields: Dictionary<Field>;
+  readonly colFields: Dictionary<Field_1>;
   readonly ocDocData: OCDocData;
   readonly id: string;
   readonly spUploadFile: SpUploadFile<SE>;

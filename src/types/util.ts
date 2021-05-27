@@ -1,4 +1,3 @@
-export type Dictionary<T> = Record<string, T>;
 export type Either<T, E> =
   | { readonly _tag: 'right'; readonly value: T }
   | { readonly _tag: 'left'; readonly error: E };

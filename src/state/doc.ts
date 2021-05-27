@@ -1,12 +1,12 @@
+import { Schema_1 } from 'kira-core';
+
 import { onDocChange } from '../cache';
 import { readDoc } from '../service';
 import {
   DbpGetNewDocId,
   DbpReadDoc,
   DbpSetDoc,
-  Dictionary,
   DocState,
-  Field,
   Observable,
   SpUploadFile,
 } from '../types';
@@ -22,9 +22,7 @@ export function makeDoc<DBE, SE>({
 }: {
   readonly collection: string;
   readonly id?: string;
-  readonly schema: {
-    readonly cols: Dictionary<Dictionary<Field>>;
-  };
+  readonly schema: Schema_1;
   readonly dbpReadDoc: DbpReadDoc<DBE>;
   readonly dbpSetDoc: DbpSetDoc<DBE>;
   readonly dbpGetNewDocId: DbpGetNewDocId<DBE>;

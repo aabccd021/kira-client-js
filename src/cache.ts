@@ -1,7 +1,8 @@
+import { Dictionary } from 'kira-core';
+
 import {
   AuthState,
   BaseState,
-  Dictionary,
   DocKey,
   DocState,
   Listener,

@@ -1,4 +1,4 @@
-import { Dictionary } from './util';
+import { Dictionary } from 'kira-core';
 
 // Document Key
 export type DocKey<C extends string = string> = { readonly collection: C; readonly id: string };

@@ -1,4 +1,6 @@
-import { Dictionary, Either } from './types';
+import { Dictionary } from 'kira-core';
+
+import { Either } from './types';
 
 export function eProps<T, E>(obj: Dictionary<Either<T, E>>): Either<Dictionary<T>, E> {
   return Object.entries(obj).reduce<Either<Dictionary<T>, E>>(

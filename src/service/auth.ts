@@ -1,15 +1,15 @@
+import { Schema_1 } from 'kira-core';
+
 import { getAuth, onDocChange, setAuth } from '../cache';
 import {
   ApOnStateChanged,
+  ApSignIn,
   ApSignOut,
   ApUserCredToId,
   DbpGetNewDocId,
   DbpReadDoc,
   DbpSetDoc,
-  Dictionary,
   DocKey,
-  Field,
-  SignIn,
   SpUploadFile,
   Unsubscribe,
   UserCredToDefaultDoc,
@@ -28,15 +28,12 @@ export function initAuth<AE, DBE, SE, SIO, UC>({
   dbpGetNewDocId,
   spUploadFile,
 }: {
+  readonly schema: Schema_1;
   readonly onAuthStateChanged: ApOnStateChanged<AE, UC>;
-  readonly signIn: SignIn<SIO>;
+  readonly signIn: ApSignIn<SIO>;
   readonly signOut: ApSignOut;
   readonly userCredToDefaultDoc: UserCredToDefaultDoc<UC>;
   readonly userCredToId: ApUserCredToId<UC>;
-  readonly schema: {
-    readonly userCol: string;
-    readonly cols: Dictionary<Dictionary<Field>>;
-  };
   readonly dbpSetDoc: DbpSetDoc<DBE>;
   readonly dbpReadDoc: DbpReadDoc<DBE>;
   readonly dbpGetNewDocId: DbpGetNewDocId<DBE>;

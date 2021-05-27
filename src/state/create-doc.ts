@@ -1,12 +1,12 @@
+import { Schema_1 } from 'kira-core';
+
 import { getAuth, makeSubject, onAuthChange, subjectToObservable } from '../cache';
 import { createDoc } from '../service';
 import {
   CreateDocState,
   DbpGetNewDocId,
   DbpSetDoc,
-  Dictionary,
   DocKey,
-  Field,
   Observable,
   OnCreated,
   OnReset,
@@ -31,9 +31,7 @@ export function makeCreateDoc<DBE, SE>({
   onCreated,
 }: {
   readonly colName: string;
-  readonly schema: {
-    readonly cols: Dictionary<Dictionary<Field>>;
-  };
+  readonly schema: Schema_1;
   readonly dbpSetDoc: DbpSetDoc<DBE>;
   readonly dbpGetNewDocId: DbpGetNewDocId<DBE>;
   readonly spUploadFile: SpUploadFile<SE>;

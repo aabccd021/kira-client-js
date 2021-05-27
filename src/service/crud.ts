@@ -1,3 +1,5 @@
+import { Schema_1 } from 'kira-core';
+
 import { getDoc, setDoc } from '../cache';
 import { ocToOcrDocData } from '../doc-data/oc-to-ocr-docdata';
 import { ocrToDocData } from '../doc-data/ocr-to-docdata';
@@ -6,20 +8,16 @@ import {
   DbpGetNewDocId,
   DbpReadDoc,
   DbpSetDoc,
-  Dictionary,
   DocKey,
   DocState,
   Either,
-  Field,
   OCDocData,
   SpUploadFile,
 } from '../types';
 
 export async function readDoc<DBE, SE>(args: {
   readonly key: DocKey;
-  readonly schema: {
-    readonly cols: Dictionary<Dictionary<Field>>;
-  };
+  readonly schema: Schema_1;
   readonly dbpReadDoc: DbpReadDoc<DBE>;
   readonly dbpSetDoc: DbpSetDoc<DBE>;
   readonly dbpGetNewDocId: DbpGetNewDocId<DBE>;
@@ -85,9 +83,7 @@ export async function createDoc<DBE, SE>({
   readonly colName: string;
   readonly id?: string;
   readonly ocDocData: OCDocData;
-  readonly schema: {
-    readonly cols: Dictionary<Dictionary<Field>>;
-  };
+  readonly schema: Schema_1;
   readonly dbpSetDoc: DbpSetDoc<DBE>;
   readonly dbpGetNewDocId: DbpGetNewDocId<DBE>;
   readonly spUploadFile: SpUploadFile<SE>;
