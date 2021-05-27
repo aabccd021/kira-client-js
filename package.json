@@ -10,7 +10,7 @@
   ],
   "exports": {
     "./": {
-      "default": "./dist/jjs/index.js",
+      "default": "./dist/mjs/index.js",
       "node": "./dist/cjs/index.js"
     }
   },
