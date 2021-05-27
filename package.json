@@ -5,14 +5,13 @@
   "repository": "git@github.com:aabccd021/kira-client-js.git",
   "author": "aabccd021 <aabccd021@gmail.com>",
   "license": "MIT",
-  "main": "lib/index.js",
-  "module": "lib/index.js",
-  "types": "lib/index.d.ts",
+  "main": "dist/cjs/index.js",
+  "module": "dist/mjs/index.js",
   "files": [
-    "lib"
+    "dist"
   ],
   "scripts": {
-    "build": "rm -rf lib && tsc --build tsconfig.build.json",
+    "build": "rm -rf dist && tsc --build tsconfig.esm.json && tsc --build tsconfig.cjs.json",
     "lint": "eslint . --ext ts",
     "test": "jest --coverage"
   },
