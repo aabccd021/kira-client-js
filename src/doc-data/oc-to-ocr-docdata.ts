@@ -27,18 +27,18 @@ import {
 } from '../types';
 
 type OcToOcrDocFieldContext_1<E> = {
-  readonly id: string;
+  readonly colName: string;
   readonly fieldName: string;
   readonly fieldValue: unknown;
-  readonly colName: string;
+  readonly id: string;
   readonly spUploadFile: SpUploadFile<E>;
 };
 
 type ToOCRDocFieldContext_3 = {
-  readonly id: string;
+  readonly colName: string;
   readonly fieldName: string;
   readonly fieldValue: unknown;
-  readonly colName: string;
+  readonly id: string;
 };
 
 async function ocToOcrCountField(

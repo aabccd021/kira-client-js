@@ -14,25 +14,6 @@ import {
   OnReset,
 } from '../types';
 
-// export function makeCreateDoc_3<E>({
-//   colName,
-//   schema,
-//   dbpSetDoc,
-//   dbpGetNewDocId,
-//   ownerless,
-//   onReset,
-//   onCreated,
-// }: {
-//   readonly colName: string;
-//   readonly schema: Schema_3;
-//   readonly dbpSetDoc: DbpSetDoc<E>;
-//   readonly dbpGetNewDocId: DbpGetNewDocId<E>;
-//   readonly ownerless?: true;
-//   readonly onReset?: OnReset;
-//   readonly onCreated?: OnCreated<DocKey>;
-// }): Observable<CreateDocState<E>> {
-// }
-
 /**
  * @param ownerless - Set this to true if document has no `owner` field.
  * Setting to true allows document to be created without signed in.
@@ -96,6 +77,7 @@ export function makeCreateDoc<S extends Schema, E>({
 
   return subjectToObservable(createDocState, {
     onInit() {
+      // TODO: maybe reset(), or not needed?
       reset;
       const unsubscribe = onAuthChange(reset);
       return unsubscribe;

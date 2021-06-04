@@ -140,17 +140,17 @@ export function getAuth<E, SIO>(): AuthState<E, SIO> | undefined {
 /**
  * Doc
  */
-export function setDoc<DBE>(key: DocKey, newDoc: DocState<DBE>): void {
+export function setDoc<E>(key: DocKey, newDoc: DocState<E>): void {
   const serializedKey = serializeDocKey(key);
   setState(serializedKey, newDoc);
 }
 
-export function onDocChange<DBE>(key: DocKey, listener: Listener<DocState<DBE>>): Unsubscribe {
+export function onDocChange<E>(key: DocKey, listener: Listener<DocState<E>>): Unsubscribe {
   const serializedKey = serializeDocKey(key);
   return subscribe(serializedKey, listener);
 }
 
-export function getDoc<DBE>(key: DocKey): DocState<DBE> | undefined {
+export function getDoc<E>(key: DocKey): DocState<E> | undefined {
   const serializedKey = serializeDocKey(key);
   return getState(serializedKey);
 }
@@ -158,20 +158,20 @@ export function getDoc<DBE>(key: DocKey): DocState<DBE> | undefined {
 /**
  * Query
  */
-export function setQueryState<DBE>(query: Query, newQueryState: QueryState<DBE>): void {
+export function setQueryState<E>(query: Query, newQueryState: QueryState<E>): void {
   const serializedKey = serializeQuery(query);
   setState(serializedKey, newQueryState);
 }
 
-export function onQueryStateChange<DBE>(
+export function onQueryStateChange<E>(
   query: Query,
-  listener: Listener<QueryState<DBE>>
+  listener: Listener<QueryState<E>>
 ): Unsubscribe {
   const serializedKey = serializeQuery(query);
   return subscribe(serializedKey, listener);
 }
 
-export function getQueryState<DBE>(query: Query): QueryState<DBE> | undefined {
+export function getQueryState<E>(query: Query): QueryState<E> | undefined {
   const serializedKey = serializeQuery(query);
   return getState(serializedKey);
 }

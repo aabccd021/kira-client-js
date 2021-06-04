@@ -1,28 +1,35 @@
 import { getQueryState, setDoc, setQueryState } from '../cache';
 import { DbpQuery, Query } from '../types';
 
-export async function fetchQuery<DBC, DBE>({
+export async function fetchQuery<DBC, E>({
+  cursor,
   dbpQuery,
   query,
-  cursor,
 }: {
-  readonly query: Query;
-  readonly dbpQuery: DbpQuery<DBC, DBE>;
   readonly cursor?: DBC;
+  readonly dbpQuery: DbpQuery<DBC, E>;
+  readonly query: Query;
 }): Promise<void> {
-  const cached = getQueryState(query);
+  const cached = getQueryState<E>(query);
 
   if (cached?.state === 'loaded' && cursor === undefined) {
     return;
   }
 
   if (cached?.state === 'loaded' && cached.hasMore) {
-    setQueryState(query, { ...cached, isFetching: true });
+    setQueryState(query, {
+      ...cached,
+      isFetching: true,
+    });
   }
 
   const queryResult = await dbpQuery(query, cursor);
   if (queryResult._tag === 'left') {
-    setQueryState(query, { state: 'error', error: queryResult.error });
+    setQueryState(query, {
+      state: 'error',
+      error: queryResult.error,
+    });
+
     return;
   }
 
@@ -35,21 +42,27 @@ export async function fetchQuery<DBC, DBE>({
 
   const queriedDocKeys = queryResult.value.docs.map(({ key }) => key);
 
-  const hasMore = query.limit && queryResult.value.docs.length >= query.limit;
-
   const newKeys = cached?.state === 'loaded' ? [...cached.keys, ...queriedDocKeys] : queriedDocKeys;
 
-  if (hasMore) {
-    setQueryState(query, {
+  // has more docs
+  if (query.limit && queryResult.value.docs.length >= query.limit) {
+    setQueryState<E>(query, {
       state: 'loaded',
       keys: newKeys,
       hasMore: true,
       isFetching: false,
-      fetchNext: () => fetchQuery({ dbpQuery, query, cursor: queryResult.value.cursor }),
+      fetchNext: () =>
+        fetchQuery({
+          cursor: queryResult.value.cursor,
+          dbpQuery,
+          query,
+        }),
     });
     return;
   }
-  setQueryState(query, {
+
+  // all docs loaded
+  setQueryState<E>(query, {
     state: 'loaded',
     keys: newKeys,
     hasMore: false,

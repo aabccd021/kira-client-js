@@ -16,14 +16,14 @@ import {
 } from '../types';
 
 export async function readDoc<S extends Schema, E>(args: {
-  readonly key: DocKey;
+  readonly dbpGetNewDocId: DbpGetNewDocId<E>;
   readonly dbpReadDoc: DbpReadDoc<E>;
   readonly dbpSetDoc: DbpSetDoc<E>;
-  readonly dbpGetNewDocId: DbpGetNewDocId<E>;
+  readonly key: DocKey;
   readonly ocToOcrDocField: OcToOcrDocField<S, E>;
   readonly schema: S;
 }): Promise<void> {
-  const { key, dbpReadDoc, dbpSetDoc, dbpGetNewDocId, ocToOcrDocField, schema } = args;
+  const { dbpGetNewDocId, dbpReadDoc, dbpSetDoc, key, ocToOcrDocField, schema } = args;
 
   const cached = getDoc<E>(key);
   if (cached) return;
@@ -75,32 +75,33 @@ export async function createDoc<S extends Schema, E>({
   colName,
   dbpGetNewDocId,
   dbpSetDoc,
-  ocToOcrDocField,
-  id,
+  id: givenId,
   ocDocData,
+  ocToOcrDocField,
   schema,
 }: {
   readonly colName: string;
   readonly dbpGetNewDocId: DbpGetNewDocId<E>;
   readonly dbpSetDoc: DbpSetDoc<E>;
-  readonly ocToOcrDocField: OcToOcrDocField<S, E>;
   readonly id?: string;
   readonly ocDocData: OCDocData;
+  readonly ocToOcrDocField: OcToOcrDocField<S, E>;
   readonly schema: S;
 }): Promise<Either<DocKey, E | AuthError>> {
   const colFields = schema.cols[colName] as Dictionary<FieldOf<S>> | undefined;
   if (colFields === undefined) {
     throw Error(`Unknown collection ${colName}`);
   }
-  const finalId: Either<string, E | AuthError> = id
-    ? { _tag: 'right', value: id }
+
+  const id: Either<string, E | AuthError> = givenId
+    ? { _tag: 'right', value: givenId }
     : await dbpGetNewDocId({ colName });
 
-  if (finalId._tag === 'left') {
-    return finalId;
+  if (id._tag === 'left') {
+    return id;
   }
 
-  const processedDocData = await Promise.all(
+  const ocrDocData = await Promise.all(
     Object.entries(colFields).map(async ([fieldName, field]) => {
       const fieldValue = ocDocData[fieldName];
 
@@ -113,8 +114,9 @@ export async function createDoc<S extends Schema, E>({
         fieldName,
         fieldValue,
         colName,
-        id: finalId.value,
+        id: id.value,
       });
+
       return [fieldName, result] as readonly [string, Either<OCRDocField, E | AuthError>];
     })
   ).then((entries) =>
@@ -140,17 +142,22 @@ export async function createDoc<S extends Schema, E>({
     )
   );
 
-  if (processedDocData._tag === 'left') return processedDocData;
+  if (ocrDocData._tag === 'left') return ocrDocData;
 
-  const ocrDocData = processedDocData.value;
-  const key: DocKey = { collection: colName, id: finalId.value };
-  const docData = ocrToDocData(ocrDocData);
+  const key: DocKey = {
+    collection: colName,
+    id: id.value,
+  };
 
   setDoc(key, {
     state: 'exists',
-    doc: { ...docData, ...key },
+    doc: {
+      ...ocrToDocData(ocrDocData.value),
+      ...key,
+    },
   });
-  dbpSetDoc(key, ocrDocData);
+
+  dbpSetDoc(key, ocrDocData.value);
 
   return { _tag: 'right', value: key };
 }
