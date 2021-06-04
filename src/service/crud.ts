@@ -1,7 +1,6 @@
 import { Dictionary, FieldOf, Schema } from 'kira-core';
 
 import { getDoc, setDoc } from '../cache';
-import { ocToOcrDocData } from '../doc-data/oc-to-ocr-docdata';
 import { ocrToDocData } from '../doc-data/ocr-to-docdata';
 import {
   AuthError,
@@ -12,6 +11,7 @@ import {
   DocState,
   Either,
   OCDocData,
+  OCRDocField,
   OcToOcrDocField,
 } from '../types';
 
@@ -70,24 +70,6 @@ export async function readDoc<S extends Schema, E>(args: {
   setDoc(key, newCached);
 }
 
-// export async function createDoc_3<DBE, SE>({
-//   colName,
-//   id,
-//   ocDocData,
-//   schema,
-//   dbpSetDoc,
-//   dbpGetNewDocId,
-// }: {
-//   readonly colName: string;
-//   readonly id?: string;
-//   readonly ocDocData: OCDocData;
-//   readonly schema: Schema_3;
-//   readonly dbpSetDoc: DbpSetDoc<DBE>;
-//   readonly dbpGetNewDocId: DbpGetNewDocId<DBE>;
-//   readonly spUploadFile: SpUploadFile<SE>;
-// }): Promise<Either<DocKey, CreateDocError<DBE, SE>>> {
-// }
-
 // TODO: add to list on create doc
 export async function createDoc<S extends Schema, E>({
   colName,
@@ -114,15 +96,49 @@ export async function createDoc<S extends Schema, E>({
     ? { _tag: 'right', value: id }
     : await dbpGetNewDocId({ colName });
 
-  if (finalId._tag === 'left') return finalId;
+  if (finalId._tag === 'left') {
+    return finalId;
+  }
 
-  const processedDocData = await ocToOcrDocData<S, E | AuthError>({
-    ocToOcrDocField: ocToOcrDocField,
-    colFields,
-    colName,
-    ocDocData,
-    id: finalId.value,
-  });
+  const processedDocData = await Promise.all(
+    Object.entries(colFields).map(async ([fieldName, field]) => {
+      const fieldValue = ocDocData[fieldName];
+
+      if (field === undefined) {
+        throw Error(`unknown field ${JSON.stringify(field)}`);
+      }
+
+      const result = await ocToOcrDocField({
+        field,
+        fieldName,
+        fieldValue,
+        colName,
+        id: finalId.value,
+      });
+      return [fieldName, result] as readonly [string, Either<OCRDocField, E | AuthError>];
+    })
+  ).then((entries) =>
+    entries.reduce<Either<Dictionary<OCRDocField>, E | AuthError>>(
+      (acc, [key, dictValue]) => {
+        if (acc._tag === 'left') {
+          return acc;
+        }
+
+        if (dictValue._tag === 'left') {
+          return dictValue;
+        }
+
+        return {
+          _tag: 'right',
+          value: {
+            ...acc.value,
+            [key]: dictValue.value,
+          },
+        };
+      },
+      { _tag: 'right', value: {} }
+    )
+  );
 
   if (processedDocData._tag === 'left') return processedDocData;
 

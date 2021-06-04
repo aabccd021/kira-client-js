@@ -2,14 +2,13 @@ import assertNever from 'assert-never';
 import {
   CountField,
   CreationTimeField,
-  Dictionary,
-  FieldOf,
   ImageField,
   OwnerField,
   RefField,
-  Schema,
   Schema_1,
+  Schema_2,
   Schema_3,
+  Schema_4,
   StringField,
 } from 'kira-core';
 
@@ -17,11 +16,8 @@ import { getAuth, getDoc } from '../cache';
 import {
   AuthError,
   Either,
-  OCDocData,
   OCRCountField,
   OCRCreationTimeField,
-  OCRDocData,
-  OCRDocField,
   OCRImageField,
   OCROwnerField,
   OCRReferenceField as OCRRefField,
@@ -29,7 +25,6 @@ import {
   OcToOcrDocField,
   SpUploadFile,
 } from '../types';
-import { eProps, mapValues, ppProps } from '../util';
 
 type OcToOcrDocFieldContext_1<E> = {
   readonly id: string;
@@ -55,7 +50,6 @@ async function ocToOcrCountField(
 
 async function ocToOcrCreationTimeField(
   field: CreationTimeField,
-
   _: ToOCRDocFieldContext_3
 ): Promise<Either<OCRCreationTimeField, never>> {
   return { _tag: 'right', value: field };
@@ -181,6 +175,22 @@ export function makeOcToOcrDocField_1<E>({
   };
 }
 
+export function makeOcToOcrDocField_2<E>({
+  spUploadFile,
+}: {
+  readonly spUploadFile: SpUploadFile<E>;
+}): OcToOcrDocField<Schema_2, E> {
+  return ({ field, ..._context }) => {
+    const context = { ..._context, spUploadFile };
+    if (field.type === 'count') return ocToOcrCountField(field, context);
+    if (field.type === 'creationTime') return ocToOcrCreationTimeField(field, context);
+    if (field.type === 'image') return ocToOcrImageField(field, context);
+    if (field.type === 'ref') return ocToOcrRefField(field, context);
+    if (field.type === 'string') return ocToOcrStringField(field, context);
+    assertNever(field);
+  };
+}
+
 export function makeOcToOcrDocField_3<E>(): OcToOcrDocField<Schema_3, E> {
   return ({ field, ..._context }) => {
     const context = { ..._context };
@@ -193,34 +203,13 @@ export function makeOcToOcrDocField_3<E>(): OcToOcrDocField<Schema_3, E> {
   };
 }
 
-export async function ocToOcrDocData<S extends Schema, E>({
-  colName,
-  colFields,
-  ocDocData,
-  id,
-  ocToOcrDocField,
-}: {
-  readonly colName: string;
-  readonly colFields: Dictionary<FieldOf<S>>;
-  readonly ocDocData: OCDocData;
-  readonly id: string;
-  readonly ocToOcrDocField: OcToOcrDocField<S, E>;
-}): Promise<Either<OCRDocData, E | AuthError>> {
-  const processedFields = await ppProps(
-    mapValues(colFields, async function (field, fieldName): Promise<
-      Either<OCRDocField, E | AuthError>
-    > {
-      const fieldValue = ocDocData[fieldName];
-
-      if (field === undefined) {
-        throw Error(`unknown field ${JSON.stringify(field)}`);
-      }
-
-      return ocToOcrDocField({ field, fieldName, fieldValue, colName, id });
-    })
-  ).then(eProps);
-
-  if (processedFields._tag === 'left') return processedFields;
-
-  return { _tag: 'right', value: processedFields.value };
+export function makeOcToOcrDocField_4<E>(): OcToOcrDocField<Schema_4, E> {
+  return ({ field, ..._context }) => {
+    const context = { ..._context };
+    if (field.type === 'count') return ocToOcrCountField(field, context);
+    if (field.type === 'creationTime') return ocToOcrCreationTimeField(field, context);
+    if (field.type === 'ref') return ocToOcrRefField(field, context);
+    if (field.type === 'string') return ocToOcrStringField(field, context);
+    assertNever(field);
+  };
 }
