@@ -7,8 +7,8 @@ export type DocKey<C extends string = string> = { readonly collection: C; readon
 export type Doc<C extends string = string, T extends DocData = DocData> = DocKey<C> & T;
 
 // ON READ LOCAL document data
-export type DocData = { readonly [key: string]: DocDataField };
-export type DocDataField = string | number | Date | DocImageField | DocReferenceField;
+export type DocData = { readonly [key: string]: DocField };
+export type DocField = string | number | Date | DocImageField | DocReferenceField;
 export type DocReferenceField = { readonly id: string } & DocData;
 
 // ON CREATE LOCAL document data
@@ -16,8 +16,8 @@ export type OCDocData = { readonly [key: string]: OCDocField };
 export type OCDocField = string | { readonly file: File } | DocImageField | { readonly id: string };
 
 // ON CREATE REMOTE document data
-export type OCRDocData = { readonly [key: string]: OCRDocDataField };
-export type OCRDocDataField =
+export type OCRDocData = { readonly [key: string]: OCRDocField };
+export type OCRDocField =
   | OCRStringField
   | OCRCountField
   | OCRImageField

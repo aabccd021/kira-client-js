@@ -1,7 +1,7 @@
 import { onAuthChange } from '../cache';
 import { AuthState, Observable } from '../types';
 
-export function makeAuth<AE, DBE, SIO>(): Observable<AuthState<AE, DBE, SIO>> {
+export function makeAuth<E, SIO>(): Observable<AuthState<E, SIO>> {
   return {
     initialState: { state: 'initializing' },
     onChange: onAuthChange,

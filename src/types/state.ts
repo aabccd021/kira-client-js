@@ -1,29 +1,5 @@
 import { Doc, DocData, DocKey, OCDocData } from './data';
 
-// Errors
-export type AuthError<AE, DBE> =
-  | {
-      readonly type: 'auth';
-      readonly error?: AE;
-    }
-  | {
-      readonly type: 'db';
-      readonly error?: DBE;
-    };
-
-export type CreateDocError<DBE, SE> =
-  | {
-      readonly type: 'db';
-      readonly error: DBE;
-    }
-  | {
-      readonly type: 'storage';
-      readonly error: SE;
-    }
-  | {
-      readonly type: 'userNotSignedIn';
-    };
-
 // Utils
 export type Reset = () => unknown;
 export type OnReset = () => unknown;
@@ -33,7 +9,7 @@ export type OnCreated<T> = (t: T) => unknown;
 // TODO: refresh (invalidate cache)
 // Doc
 export type DocState<
-  DBE,
+  E,
   C extends string = string,
   T extends DocData = DocData,
   TC extends OCDocData = OCDocData
@@ -46,7 +22,7 @@ export type DocState<
     }
   | {
       readonly state: 'error';
-      readonly error: DBE;
+      readonly error: E;
       readonly refresh: Refresh;
     }
   | {
@@ -63,7 +39,7 @@ export type DocState<
     };
 
 // Create Doc
-export type CreateDocState<DBE, SE, C extends string = string, T extends OCDocData = OCDocData> =
+export type CreateDocState<E, C extends string = string, T extends OCDocData = OCDocData> =
   | {
       readonly state: 'initializing';
     }
@@ -82,7 +58,7 @@ export type CreateDocState<DBE, SE, C extends string = string, T extends OCDocDa
     }
   | {
       readonly state: 'error';
-      readonly error: CreateDocError<DBE, SE>;
+      readonly error: E;
       readonly reset: Reset;
     }
   | {
@@ -96,12 +72,12 @@ export type SignOut = () => void;
 
 export type SignIn<SIO> = (sio: SIO) => void;
 
-export type SignedInAuthState<AE, DBE, U extends DocData = DocData> = {
+export type SignedInAuthState<E, U extends DocData = DocData> = {
   readonly state: 'signedIn';
   readonly user: U;
   readonly id: string;
   readonly signOut: SignOut;
-  readonly error?: AuthError<AE, DBE>;
+  readonly error?: E;
 };
 
 export type LoadingUserDataAuthState = {
@@ -110,19 +86,19 @@ export type LoadingUserDataAuthState = {
   readonly signOut: SignOut;
 };
 
-export type SignedOutAuthState<AE, DBE, SIO> = {
+export type SignedOutAuthState<E, SIO> = {
   readonly state: 'signedOut';
   readonly signIn: (option: SIO) => void;
-  readonly error?: AuthError<AE, DBE>;
+  readonly error?: E;
 };
 
-export type AuthState<AE, DBE, SIO, U extends DocData = DocData> =
+export type AuthState<E, SIO, U extends DocData = DocData> =
   | {
       readonly state: 'initializing';
     }
-  | SignedOutAuthState<AE, DBE, SIO>
+  | SignedOutAuthState<E, SIO>
   | LoadingUserDataAuthState
-  | SignedInAuthState<AE, DBE, U>;
+  | SignedInAuthState<E, U>;
 
 // Query
 // TODO: refresh

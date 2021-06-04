@@ -3,64 +3,68 @@ import {
   CountField,
   CreationTimeField,
   Dictionary,
-  Field_1,
+  FieldOf,
   ImageField,
   OwnerField,
   RefField,
+  Schema,
+  Schema_1,
+  Schema_3,
   StringField,
 } from 'kira-core';
 
 import { getAuth, getDoc } from '../cache';
 import {
-  CreateDocError,
+  AuthError,
   Either,
   OCDocData,
   OCRCountField,
   OCRCreationTimeField,
   OCRDocData,
-  OCRDocDataField,
+  OCRDocField,
   OCRImageField,
   OCROwnerField,
-  OCRReferenceField,
+  OCRReferenceField as OCRRefField,
   OCRStringField,
+  OcToOcrDocField,
   SpUploadFile,
 } from '../types';
 import { eProps, mapValues, ppProps } from '../util';
 
-type HandleFieldContext_1<SE> = {
+type OcToOcrDocFieldContext_1<E> = {
   readonly id: string;
   readonly fieldName: string;
   readonly fieldValue: unknown;
   readonly colName: string;
-  readonly spUploadFile: SpUploadFile<SE>;
+  readonly spUploadFile: SpUploadFile<E>;
 };
 
-type HandleFieldContext_3 = {
+type ToOCRDocFieldContext_3 = {
   readonly id: string;
   readonly fieldName: string;
   readonly fieldValue: unknown;
   readonly colName: string;
 };
 
-function handleCountField(
+async function ocToOcrCountField(
   field: CountField,
-  _: HandleFieldContext_3
-): Either<OCRCountField, never> {
+  _: ToOCRDocFieldContext_3
+): Promise<Either<OCRCountField, never>> {
   return { _tag: 'right', value: field };
 }
 
-function handleCreationTimeField(
+async function ocToOcrCreationTimeField(
   field: CreationTimeField,
 
-  _: HandleFieldContext_3
-): Either<OCRCreationTimeField, never> {
+  _: ToOCRDocFieldContext_3
+): Promise<Either<OCRCreationTimeField, never>> {
   return { _tag: 'right', value: field };
 }
 
-async function handleImageField<DBE, SE>(
+async function ocToOcrImageField<E>(
   _: ImageField,
-  { fieldName, fieldValue, spUploadFile, id, colName }: HandleFieldContext_1<SE>
-): Promise<Either<OCRImageField, CreateDocError<DBE, SE>>> {
+  { fieldName, fieldValue, spUploadFile, id, colName }: OcToOcrDocFieldContext_1<E>
+): Promise<Either<OCRImageField, E>> {
   const url = (fieldValue as { readonly url: string }).url;
   if (typeof url === 'string') {
     return {
@@ -88,10 +92,7 @@ async function handleImageField<DBE, SE>(
   });
 
   if (uploadResult._tag === 'left') {
-    return {
-      _tag: 'left',
-      error: { type: 'storage', error: uploadResult.error },
-    };
+    return uploadResult;
   }
 
   const { downloadUrl } = uploadResult.value;
@@ -104,11 +105,10 @@ async function handleImageField<DBE, SE>(
   };
 }
 
-function handleOwnerField<DBE, SE>(
+async function ocToOcrOwnerField(
   field: OwnerField,
-
-  _: HandleFieldContext_3
-): Either<OCROwnerField, CreateDocError<DBE, SE>> {
+  _: ToOCRDocFieldContext_3
+): Promise<Either<OCROwnerField, AuthError>> {
   const auth = getAuth();
   if (auth?.state !== 'signedIn') {
     return {
@@ -126,10 +126,10 @@ function handleOwnerField<DBE, SE>(
   };
 }
 
-async function handleReferenceField<DBE, SE>(
+async function ocToOcrRefField<E>(
   field: RefField,
-  { colName, fieldValue }: HandleFieldContext_3
-): Promise<Either<OCRReferenceField, CreateDocError<DBE, SE>>> {
+  { colName, fieldValue }: ToOCRDocFieldContext_3
+): Promise<Either<OCRRefField, E>> {
   const { id } = fieldValue as { readonly id: unknown };
   if (typeof id !== 'string') {
     throw Error(`${colName}.id is not string: ${id}`);
@@ -151,10 +151,10 @@ async function handleReferenceField<DBE, SE>(
   };
 }
 
-function handleStringField<DBE, SE>(
+async function ocToOcrStringField<E>(
   _: StringField,
-  { colName, fieldValue, fieldName }: HandleFieldContext_3
-): Either<OCRStringField, CreateDocError<DBE, SE>> {
+  { colName, fieldValue, fieldName }: ToOCRDocFieldContext_3
+): Promise<Either<OCRStringField, E>> {
   if (typeof fieldValue !== 'string') {
     throw Error(`${colName}.${fieldName} is not string: ${fieldValue}`);
   }
@@ -164,48 +164,59 @@ function handleStringField<DBE, SE>(
   };
 }
 
-async function handleField_1<DBE, SE>({
-  field,
-  ...context
+export function makeOcToOcrDocField_1<E>({
+  spUploadFile,
 }: {
-  readonly field: Field_1;
-  readonly id: string;
-  readonly fieldName: string;
-  readonly fieldValue: unknown;
-  readonly colName: string;
-  readonly spUploadFile: SpUploadFile<SE>;
-}): Promise<Either<OCRDocDataField, CreateDocError<DBE, SE>>> {
-  if (field.type === 'count') return handleCountField(field, context);
-  if (field.type === 'creationTime') return handleCreationTimeField(field, context);
-  if (field.type === 'image') return handleImageField(field, context);
-  if (field.type === 'owner') return handleOwnerField(field, context);
-  if (field.type === 'ref') return handleReferenceField(field, context);
-  if (field.type === 'string') return handleStringField(field, context);
-  assertNever(field);
+  readonly spUploadFile: SpUploadFile<E>;
+}): OcToOcrDocField<Schema_1, E> {
+  return ({ field, ..._context }) => {
+    const context = { ..._context, spUploadFile };
+    if (field.type === 'count') return ocToOcrCountField(field, context);
+    if (field.type === 'creationTime') return ocToOcrCreationTimeField(field, context);
+    if (field.type === 'image') return ocToOcrImageField(field, context);
+    if (field.type === 'owner') return ocToOcrOwnerField(field, context);
+    if (field.type === 'ref') return ocToOcrRefField(field, context);
+    if (field.type === 'string') return ocToOcrStringField(field, context);
+    assertNever(field);
+  };
 }
 
-export async function ocToOcrDocData_1<DBE, SE>({
+export function makeOcToOcrDocField_3<E>(): OcToOcrDocField<Schema_3, E> {
+  return ({ field, ..._context }) => {
+    const context = { ..._context };
+    if (field.type === 'count') return ocToOcrCountField(field, context);
+    if (field.type === 'creationTime') return ocToOcrCreationTimeField(field, context);
+    if (field.type === 'owner') return ocToOcrOwnerField(field, context);
+    if (field.type === 'ref') return ocToOcrRefField(field, context);
+    if (field.type === 'string') return ocToOcrStringField(field, context);
+    assertNever(field);
+  };
+}
+
+export async function ocToOcrDocData<S extends Schema, E>({
   colName,
   colFields,
   ocDocData,
   id,
-  spUploadFile,
+  ocToOcrDocField,
 }: {
   readonly colName: string;
-  readonly colFields: Dictionary<Field_1>;
+  readonly colFields: Dictionary<FieldOf<S>>;
   readonly ocDocData: OCDocData;
   readonly id: string;
-  readonly spUploadFile: SpUploadFile<SE>;
-}): Promise<Either<OCRDocData, CreateDocError<DBE, SE>>> {
+  readonly ocToOcrDocField: OcToOcrDocField<S, E>;
+}): Promise<Either<OCRDocData, E | AuthError>> {
   const processedFields = await ppProps(
     mapValues(colFields, async function (field, fieldName): Promise<
-      Either<OCRDocDataField, CreateDocError<DBE, SE>>
+      Either<OCRDocField, E | AuthError>
     > {
       const fieldValue = ocDocData[fieldName];
 
-      if (field === undefined) throw Error(`unknown field ${JSON.stringify(field)}`);
+      if (field === undefined) {
+        throw Error(`unknown field ${JSON.stringify(field)}`);
+      }
 
-      return handleField_1({ field, fieldName, fieldValue, colName, id, spUploadFile });
+      return ocToOcrDocField({ field, fieldName, fieldValue, colName, id });
     })
   ).then(eProps);
 

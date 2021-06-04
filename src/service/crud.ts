@@ -1,10 +1,10 @@
-import { Schema_1 } from 'kira-core';
+import { Dictionary, FieldOf, Schema } from 'kira-core';
 
 import { getDoc, setDoc } from '../cache';
-import { ocToOcrDocData_1 } from '../doc-data/oc-to-ocr-docdata';
+import { ocToOcrDocData } from '../doc-data/oc-to-ocr-docdata';
 import { ocrToDocData } from '../doc-data/ocr-to-docdata';
 import {
-  CreateDocError,
+  AuthError,
   DbpGetNewDocId,
   DbpReadDoc,
   DbpSetDoc,
@@ -12,20 +12,20 @@ import {
   DocState,
   Either,
   OCDocData,
-  SpUploadFile,
+  OcToOcrDocField,
 } from '../types';
 
-export async function readDoc<DBE, SE>(args: {
+export async function readDoc<S extends Schema, E>(args: {
   readonly key: DocKey;
-  readonly schema: Schema_1;
-  readonly dbpReadDoc: DbpReadDoc<DBE>;
-  readonly dbpSetDoc: DbpSetDoc<DBE>;
-  readonly dbpGetNewDocId: DbpGetNewDocId<DBE>;
-  readonly spUploadFile: SpUploadFile<SE>;
+  readonly dbpReadDoc: DbpReadDoc<E>;
+  readonly dbpSetDoc: DbpSetDoc<E>;
+  readonly dbpGetNewDocId: DbpGetNewDocId<E>;
+  readonly ocToOcrDocField: OcToOcrDocField<S, E>;
+  readonly schema: S;
 }): Promise<void> {
-  const { key, schema, dbpReadDoc, dbpSetDoc, dbpGetNewDocId, spUploadFile } = args;
+  const { key, dbpReadDoc, dbpSetDoc, dbpGetNewDocId, ocToOcrDocField, schema } = args;
 
-  const cached = getDoc<DBE>(key);
+  const cached = getDoc<E>(key);
   if (cached) return;
 
   const remoteDoc = await dbpReadDoc(key);
@@ -38,7 +38,7 @@ export async function readDoc<DBE, SE>(args: {
     return;
   }
 
-  const newCached: DocState<DBE> =
+  const newCached: DocState<E> =
     remoteDoc.value.state === 'notExists'
       ? {
           state: 'notExists',
@@ -47,14 +47,14 @@ export async function readDoc<DBE, SE>(args: {
               state: 'creating',
               refresh: () => readDoc(args),
             });
-            createDoc_1({
+            createDoc({
               colName: key.collection,
               id: key.id,
               ocDocData,
-              schema,
               dbpSetDoc,
               dbpGetNewDocId,
-              spUploadFile,
+              ocToOcrDocField,
+              schema,
             });
           },
         }
@@ -89,42 +89,37 @@ export async function readDoc<DBE, SE>(args: {
 // }
 
 // TODO: add to list on create doc
-export async function createDoc_1<DBE, SE>({
+export async function createDoc<S extends Schema, E>({
   colName,
+  dbpGetNewDocId,
+  dbpSetDoc,
+  ocToOcrDocField,
   id,
   ocDocData,
   schema,
-  dbpSetDoc,
-  dbpGetNewDocId,
-  spUploadFile,
 }: {
   readonly colName: string;
+  readonly dbpGetNewDocId: DbpGetNewDocId<E>;
+  readonly dbpSetDoc: DbpSetDoc<E>;
+  readonly ocToOcrDocField: OcToOcrDocField<S, E>;
   readonly id?: string;
   readonly ocDocData: OCDocData;
-  readonly schema: Schema_1;
-  readonly dbpSetDoc: DbpSetDoc<DBE>;
-  readonly dbpGetNewDocId: DbpGetNewDocId<DBE>;
-  readonly spUploadFile: SpUploadFile<SE>;
-}): Promise<Either<DocKey, CreateDocError<DBE, SE>>> {
-  const colFields = schema.cols[colName];
+  readonly schema: S;
+}): Promise<Either<DocKey, E | AuthError>> {
+  const colFields = schema.cols[colName] as Dictionary<FieldOf<S>> | undefined;
   if (colFields === undefined) {
     throw Error(`Unknown collection ${colName}`);
   }
-  const finalId: Either<string, DBE> = id
+  const finalId: Either<string, E | AuthError> = id
     ? { _tag: 'right', value: id }
     : await dbpGetNewDocId({ colName });
 
-  if (finalId._tag === 'left') {
-    return {
-      _tag: 'left',
-      error: { type: 'db', error: finalId.error },
-    };
-  }
+  if (finalId._tag === 'left') return finalId;
 
-  const processedDocData = await ocToOcrDocData_1<DBE, SE>({
+  const processedDocData = await ocToOcrDocData<S, E | AuthError>({
+    ocToOcrDocField: ocToOcrDocField,
     colFields,
     colName,
-    spUploadFile,
     ocDocData,
     id: finalId.value,
   });

@@ -125,18 +125,16 @@ function serializeQuery({ collection, orderByField, orderDirection }: Query): st
 /**
  * Auth
  */
-export function setAuth<AE, DBE, SIO>(newAuth: AuthState<AE, DBE, SIO>): void {
+export function setAuth<E, SIO>(newAuth: AuthState<E, SIO>): void {
   setState(authKey, newAuth);
 }
 
-export function onAuthChange<AE, DBE, SIO>(
-  listener: Listener<AuthState<AE, DBE, SIO>>
-): Unsubscribe {
+export function onAuthChange<E, SIO>(listener: Listener<AuthState<E, SIO>>): Unsubscribe {
   return subscribe(authKey, listener);
 }
 
-export function getAuth<AE, DBE, SIO>(): AuthState<AE, DBE, SIO> | undefined {
-  return getState<AuthState<AE, DBE, SIO>>(authKey);
+export function getAuth<E, SIO>(): AuthState<E, SIO> | undefined {
+  return getState<AuthState<E, SIO>>(authKey);
 }
 
 /**

@@ -1,17 +1,37 @@
-import { Schema_1 } from 'kira-core';
+import { Schema } from 'kira-core';
 
 import { getAuth, makeSubject, onAuthChange, subjectToObservable } from '../cache';
-import { createDoc_1 } from '../service';
+import { createDoc } from '../service';
 import {
+  AuthError,
   CreateDocState,
   DbpGetNewDocId,
   DbpSetDoc,
   DocKey,
   Observable,
+  OcToOcrDocField,
   OnCreated,
   OnReset,
-  SpUploadFile,
 } from '../types';
+
+// export function makeCreateDoc_3<E>({
+//   colName,
+//   schema,
+//   dbpSetDoc,
+//   dbpGetNewDocId,
+//   ownerless,
+//   onReset,
+//   onCreated,
+// }: {
+//   readonly colName: string;
+//   readonly schema: Schema_3;
+//   readonly dbpSetDoc: DbpSetDoc<E>;
+//   readonly dbpGetNewDocId: DbpGetNewDocId<E>;
+//   readonly ownerless?: true;
+//   readonly onReset?: OnReset;
+//   readonly onCreated?: OnCreated<DocKey>;
+// }): Observable<CreateDocState<E>> {
+// }
 
 /**
  * @param ownerless - Set this to true if document has no `owner` field.
@@ -20,26 +40,26 @@ import {
  * requires user to be signed up.
  * For example, this should be set to true when creating new user.
  */
-export function makeCreateDoc<DBE, SE>({
+export function makeCreateDoc<S extends Schema, E>({
   colName,
-  schema,
-  dbpSetDoc,
   dbpGetNewDocId,
-  spUploadFile,
-  ownerless,
-  onReset,
+  dbpSetDoc,
+  ocToOcrDocField,
   onCreated,
+  onReset,
+  ownerless,
+  schema,
 }: {
   readonly colName: string;
-  readonly schema: Schema_1;
-  readonly dbpSetDoc: DbpSetDoc<DBE>;
-  readonly dbpGetNewDocId: DbpGetNewDocId<DBE>;
-  readonly spUploadFile: SpUploadFile<SE>;
-  readonly ownerless?: true;
-  readonly onReset?: OnReset;
+  readonly dbpGetNewDocId: DbpGetNewDocId<E>;
+  readonly dbpSetDoc: DbpSetDoc<E>;
+  readonly ocToOcrDocField: OcToOcrDocField<S, E>;
   readonly onCreated?: OnCreated<DocKey>;
-}): Observable<CreateDocState<DBE, SE>> {
-  const createDocState = makeSubject<CreateDocState<DBE, SE>>({ state: 'initializing' });
+  readonly onReset?: OnReset;
+  readonly ownerless?: true;
+  readonly schema: S;
+}): Observable<CreateDocState<E | AuthError>> {
+  const createDocState = makeSubject<CreateDocState<E | AuthError>>({ state: 'initializing' });
 
   const reset: () => void = () => {
     const auth = getAuth();
@@ -56,13 +76,13 @@ export function makeCreateDoc<DBE, SE>({
       reset,
       create: async (docData) => {
         createDocState.set({ state: 'creating', reset });
-        const createdDocKey = await createDoc_1({
+        const createdDocKey = await createDoc({
           colName,
           ocDocData: docData,
-          schema,
           dbpSetDoc,
           dbpGetNewDocId,
-          spUploadFile,
+          ocToOcrDocField,
+          schema,
         });
         if (createdDocKey._tag === 'left') {
           createDocState.set({ state: 'error', reset, error: createdDocKey.error });

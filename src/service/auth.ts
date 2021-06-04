@@ -1,4 +1,4 @@
-import { Schema_1 } from 'kira-core';
+import { Schema_1, Schema_3 } from 'kira-core';
 
 import { getAuth, onDocChange, setAuth } from '../cache';
 import {
@@ -10,57 +10,34 @@ import {
   DbpReadDoc,
   DbpSetDoc,
   DocKey,
-  SpUploadFile,
+  OcToOcrDocField,
   Unsubscribe,
   UserCredToDefaultDoc,
 } from '../types';
-import { createDoc_1, readDoc } from './crud';
+import { createDoc, readDoc } from './crud';
 
-// export function initAuth_3<AE, DBE, SE, SIO, UC>({
-//   onAuthStateChanged,
-//   signIn,
-//   signOut,
-//   userCredToDefaultDoc,
-//   userCredToId,
-//   schema,
-//   dbpSetDoc,
-//   dbpReadDoc,
-//   dbpGetNewDocId,
-// }: {
-//   readonly schema: Schema_3;
-//   readonly onAuthStateChanged: ApOnStateChanged<AE, UC>;
-//   readonly signIn: ApSignIn<SIO>;
-//   readonly signOut: ApSignOut;
-//   readonly userCredToDefaultDoc: UserCredToDefaultDoc<UC>;
-//   readonly userCredToId: ApUserCredToId<UC>;
-//   readonly dbpSetDoc: DbpSetDoc<DBE>;
-//   readonly dbpReadDoc: DbpReadDoc<DBE>;
-//   readonly dbpGetNewDocId: DbpGetNewDocId<DBE>;
-// }): Unsubscribe {
-// }
-
-export function initAuth<AE, DBE, SE, SIO, UC>({
+export function initAuth<S extends Schema_1 | Schema_3, E, SIO, UC>({
+  dbpGetNewDocId,
+  dbpReadDoc,
+  dbpSetDoc,
+  ocToOcrDocField,
   onAuthStateChanged,
+  schema,
   signIn,
   signOut,
   userCredToDefaultDoc,
   userCredToId,
-  schema,
-  dbpSetDoc,
-  dbpReadDoc,
-  dbpGetNewDocId,
-  spUploadFile,
 }: {
-  readonly schema: Schema_1;
-  readonly onAuthStateChanged: ApOnStateChanged<AE, UC>;
+  readonly dbpGetNewDocId: DbpGetNewDocId<E>;
+  readonly dbpReadDoc: DbpReadDoc<E>;
+  readonly dbpSetDoc: DbpSetDoc<E>;
+  readonly ocToOcrDocField: OcToOcrDocField<S, E>;
+  readonly onAuthStateChanged: ApOnStateChanged<E, UC>;
+  readonly schema: S;
   readonly signIn: ApSignIn<SIO>;
   readonly signOut: ApSignOut;
   readonly userCredToDefaultDoc: UserCredToDefaultDoc<UC>;
   readonly userCredToId: ApUserCredToId<UC>;
-  readonly dbpSetDoc: DbpSetDoc<DBE>;
-  readonly dbpReadDoc: DbpReadDoc<DBE>;
-  readonly dbpGetNewDocId: DbpGetNewDocId<DBE>;
-  readonly spUploadFile: SpUploadFile<SE>;
 }): Unsubscribe {
   // eslint-disable-next-line functional/no-let
   let unsubscribeDocListener: Unsubscribe | undefined = undefined;
@@ -84,14 +61,14 @@ export function initAuth<AE, DBE, SE, SIO, UC>({
         }
 
         if (cachedUser.state === 'notExists') {
-          createDoc_1({
+          createDoc({
             colName: userDocKey.collection,
+            dbpGetNewDocId,
+            dbpSetDoc,
             id,
             ocDocData: userCredToDefaultDoc(userCred),
             schema,
-            dbpSetDoc,
-            dbpGetNewDocId,
-            spUploadFile,
+            ocToOcrDocField,
           });
           return;
         }
@@ -107,10 +84,10 @@ export function initAuth<AE, DBE, SE, SIO, UC>({
       readDoc({
         key: userDocKey,
         dbpReadDoc,
-        schema,
         dbpSetDoc,
         dbpGetNewDocId,
-        spUploadFile,
+        schema,
+        ocToOcrDocField,
       });
     },
 
