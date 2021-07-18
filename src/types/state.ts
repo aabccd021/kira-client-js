@@ -1,6 +1,7 @@
 import { Dictionary, DocKey, ReadDocData } from 'kira-nosql';
 
 import { OcField } from './data';
+import { CreateDocError } from './error';
 import { PQueryError, PReadDocError } from './provider';
 
 // Utils
@@ -39,33 +40,34 @@ export type DocState =
     };
 
 // Create Doc
-// export type CreateDocState<E, C extends string = string, T extends OCDocData = OCDocData> =
-//   | {
-//       readonly state: 'initializing';
-//     }
-//   | {
-//       readonly state: 'userNotSignedIn';
-//     }
-//   | {
-//       readonly state: 'notCreated';
-//       readonly create: (t: T) => void;
-//       readonly reset: Reset;
-//       // TODO: isCreating: boolean;
-//     }
-//   | {
-//       readonly state: 'creating';
-//       readonly reset: Reset;
-//     }
-//   | {
-//       readonly state: 'error';
-//       readonly error: E;
-//       readonly reset: Reset;
-//     }
-//   | {
-//       readonly state: 'created';
-//       readonly createdDocKey: DocKey<C>;
-//       readonly reset: Reset;
-//     };
+export type CreateDocStateError = CreateDocError;
+export type CreateDocState =
+  | {
+      readonly state: 'initializing';
+    }
+  | {
+      readonly state: 'userNotSignedIn';
+    }
+  | {
+      readonly state: 'notCreated';
+      readonly create: (ocDoc: Dictionary<OcField>) => void;
+      readonly reset: Reset;
+      // TODO: isCreating: boolean;
+    }
+  | {
+      readonly state: 'creating';
+      readonly reset: Reset;
+    }
+  | {
+      readonly state: 'error';
+      readonly error: CreateDocStateError;
+      readonly reset: Reset;
+    }
+  | {
+      readonly state: 'created';
+      readonly createdDocKey: DocKey;
+      readonly reset: Reset;
+    };
 
 // Auth
 // export type SignOut = () => void;

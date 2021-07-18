@@ -1,6 +1,6 @@
 import { onQueryStateChange } from '../cache';
 import { fetchQuery } from '../service';
-import { Observable, PQuery, Query, QueryState } from '../types';
+import { Observable, PQuery, PQueryError, Query, QueryState } from '../types';
 
 export function makeQuery<DBC>({
   dbpQuery,
@@ -13,8 +13,7 @@ export function makeQuery<DBC>({
     initialState: { state: 'initializing' },
     onChange: (listener) => {
       fetchQuery({ query, dbpQuery });
-      const unsubscribe = onQueryStateChange(query, listener);
-      return unsubscribe;
+      return onQueryStateChange(query, listener);
     },
   };
 }

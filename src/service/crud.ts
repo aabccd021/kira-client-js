@@ -2,6 +2,7 @@ import { Dictionary, DocKey, Either } from 'kira-nosql';
 
 import { getDoc, setDoc } from '../cache';
 import {
+  CreateDocError,
   OcField,
   OcToDoc,
   OcToDocError,
@@ -82,7 +83,7 @@ export async function createDoc({
   readonly id?: string;
   readonly ocDoc: Dictionary<OcField>;
   readonly ocToDoc: OcToDoc;
-}): Promise<Either<DocKey, OcToDocError | PGetNewDocIdError | PSetDocError>> {
+}): Promise<Either<DocKey, CreateDocError>> {
   const id: Either<string, PGetNewDocIdError> = givenId
     ? { tag: 'right', value: givenId }
     : await provider.getNewDocId({ colName });

@@ -1,15 +1,15 @@
+import { DocKey } from 'kira-nosql';
+
 import { getAuth, makeSubject, onAuthChange, subjectToObservable } from '../cache';
 import { createDoc } from '../service';
 import {
-  AuthError,
   CreateDocState,
-  PGetNewDocId,
-  PSetDoc,
-  DocKey,
   Observable,
-  OcToOcrDocField,
+  OcToDoc,
   OnCreated,
   OnReset,
+  PGetNewDocId,
+  PSetDoc,
 } from '../types';
 
 /**
@@ -19,26 +19,25 @@ import {
  * requires user to be signed up.
  * For example, this should be set to true when creating new user.
  */
-export function makeCreateDoc<S extends Schema, E>({
+export function makeCreateDoc({
   colName,
-  dbpGetNewDocId,
-  dbpSetDoc,
-  ocToOcrDocField,
+  provider,
   onCreated,
   onReset,
   ownerless,
-  schema,
+  ocToDoc,
 }: {
   readonly colName: string;
-  readonly dbpGetNewDocId: PGetNewDocId<E>;
-  readonly dbpSetDoc: PSetDoc<E>;
-  readonly ocToOcrDocField: OcToOcrDocField<S, E>;
+  readonly provider: {
+    readonly getNewDocId: PGetNewDocId;
+    readonly setDoc: PSetDoc;
+  };
   readonly onCreated?: OnCreated<DocKey>;
   readonly onReset?: OnReset;
   readonly ownerless?: true;
-  readonly schema: S;
-}): Observable<CreateDocState<E | AuthError>> {
-  const createDocState = makeSubject<CreateDocState<E | AuthError>>({ state: 'initializing' });
+  readonly ocToDoc: OcToDoc;
+}): Observable<CreateDocState> {
+  const createDocState = makeSubject<CreateDocState>({ state: 'initializing' });
 
   const reset: () => void = () => {
     const auth = getAuth();
@@ -53,15 +52,13 @@ export function makeCreateDoc<S extends Schema, E>({
     createDocState.set({
       state: 'notCreated',
       reset,
-      create: async (docData) => {
+      create: async (ocDoc) => {
         createDocState.set({ state: 'creating', reset });
         const createdDocKey = await createDoc({
           colName,
-          ocDocData: docData,
-          pSetDoc: dbpSetDoc,
-          dbpGetNewDocId,
-          ocToOcrDocField,
-          schema,
+          ocDoc,
+          provider,
+          ocToDoc,
         });
         if (createdDocKey.tag === 'left') {
           createDocState.set({ state: 'error', reset, error: createdDocKey.error });
@@ -75,10 +72,9 @@ export function makeCreateDoc<S extends Schema, E>({
 
   return subjectToObservable(createDocState, {
     onInit() {
-      // TODO: maybe reset(), or not needed?
+      // TODO: maybe invoke reset(), or not needed?
       reset;
-      const unsubscribe = onAuthChange(reset);
-      return unsubscribe;
+      return onAuthChange(reset);
     },
   });
 }

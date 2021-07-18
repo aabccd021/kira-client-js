@@ -1,45 +1,33 @@
 import { onDocChange } from '../cache';
 import { readDoc } from '../service';
-import {
-  PGetNewDocId,
-  PReadDoc,
-  PSetDoc,
-  DocState,
-  Observable,
-  OcToOcrDocField,
-} from '../types';
+import { DocState, Observable, OcToDoc, PGetNewDocId, PReadDoc, PSetDoc } from '../types';
 
-export function makeDoc<S extends Schema, E>({
-  collection,
-  dbpGetNewDocId,
-  dbpReadDoc,
-  dbpSetDoc,
-  ocToOcrDocField,
+export function makeDoc({
+  col,
+  provider,
+  ocToDoc,
   id,
-  schema,
 }: {
-  readonly collection: string;
-  readonly dbpGetNewDocId: PGetNewDocId<E>;
-  readonly dbpReadDoc: PReadDoc<E>;
-  readonly dbpSetDoc: PSetDoc<E>;
-  readonly ocToOcrDocField: OcToOcrDocField<S, E>;
+  readonly col: string;
   readonly id?: string;
-  readonly schema: S;
-}): Observable<DocState<E>> {
+  readonly provider: {
+    readonly getNewDocId: PGetNewDocId;
+    readonly readDoc: PReadDoc;
+    readonly setDoc: PSetDoc;
+  };
+  readonly ocToDoc: OcToDoc;
+}): Observable<DocState> {
   return {
     initialState: id ? { state: 'initializing' } : { state: 'keyIsEmpty' },
     onChange: id
       ? (listener) => {
+          const key = { col, id };
           readDoc({
-            key: { collection, id },
-            dbpReadDoc,
-            dbpSetDoc,
-            dbpGetNewDocId,
-            ocToOcrDocField,
-            schema,
+            key,
+            ocToDoc,
+            provider,
           });
-          const unsubscribe = onDocChange({ collection, id }, listener);
-          return unsubscribe;
+          return onDocChange(key, listener);
         }
       : undefined,
   };
