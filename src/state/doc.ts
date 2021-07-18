@@ -22,11 +22,7 @@ export function makeDoc({
     onChange: id
       ? (listener) => {
           const key = { col, id };
-          readDoc({
-            key,
-            ocToDoc,
-            provider,
-          });
+          readDoc({ key, ocToDoc, provider });
           return onDocChange(key, listener);
         }
       : undefined,

@@ -1,8 +1,14 @@
-import { Dictionary, DocKey, ReadDocData } from 'kira-nosql';
+import { DocKey, ReadDocData } from 'kira-nosql';
 
-import { OcField } from './data';
-import { CreateDocError } from './error';
-import { PQueryError, PReadDocError } from './provider';
+import { OcDoc } from './data';
+import {
+  CreateDocStateError,
+  DocStateError,
+  QueryStateError,
+  SignedInAuthStateError,
+  SignedOutAuthStateError,
+} from './error';
+import { SignInOption } from './provider';
 
 // Utils
 export type Reset = () => unknown;
@@ -11,7 +17,6 @@ export type Refresh = () => unknown;
 export type OnCreated<T> = (t: T) => unknown;
 
 // TODO: refresh (invalidate cache)
-export type DocStateError = PReadDocError;
 // Doc
 export type DocState =
   | {
@@ -27,7 +32,7 @@ export type DocState =
     }
   | {
       readonly state: 'notExists';
-      readonly create: (ocDocData: Dictionary<OcField>) => void;
+      readonly create: (ocDocData: OcDoc) => void;
     }
   | {
       readonly state: 'creating';
@@ -40,7 +45,6 @@ export type DocState =
     };
 
 // Create Doc
-export type CreateDocStateError = CreateDocError;
 export type CreateDocState =
   | {
       readonly state: 'initializing';
@@ -50,7 +54,7 @@ export type CreateDocState =
     }
   | {
       readonly state: 'notCreated';
-      readonly create: (ocDoc: Dictionary<OcField>) => void;
+      readonly create: (ocDoc: OcDoc) => void;
       readonly reset: Reset;
       // TODO: isCreating: boolean;
     }
@@ -70,43 +74,40 @@ export type CreateDocState =
     };
 
 // Auth
-// export type SignOut = () => void;
+export type SignOut = () => void;
 
-// export type SignIn<SIO> = (sio: SIO) => void;
+export type SignIn<SIO> = (sio: SIO) => void;
 
-// export type SignedInAuthState<E, U extends DocData = DocData> = {
-//   readonly state: 'signedIn';
-//   readonly user: U;
-//   readonly id: string;
-//   readonly signOut: SignOut;
-//   readonly error?: E;
-// };
+export type SignedInAuthState = {
+  readonly state: 'signedIn';
+  readonly user: ReadDocData;
+  readonly id: string;
+  readonly signOut: SignOut;
+  readonly error?: SignedInAuthStateError;
+};
 
-// export type LoadingUserDataAuthState = {
-//   readonly state: 'loadingUserData';
-//   readonly id: string;
-//   readonly signOut: SignOut;
-// };
+export type LoadingUserDataAuthState = {
+  readonly state: 'loadingUserData';
+  readonly id: string;
+  readonly signOut: SignOut;
+};
 
-// export type SignedOutAuthState<E, SIO> = {
-//   readonly state: 'signedOut';
-//   readonly signIn: (option: SIO) => void;
-//   readonly error?: E;
-// };
+export type SignedOutAuthState = {
+  readonly state: 'signedOut';
+  readonly signIn: (option: SignInOption) => void;
+  readonly error?: SignedOutAuthStateError;
+};
 
-// export type AuthState<E, SIO, U extends DocData = DocData> =
-//   | {
-//       readonly state: 'initializing';
-//     }
-//   | SignedOutAuthState<E, SIO>
-//   | LoadingUserDataAuthState
-//   | SignedInAuthState<E, U>;
+export type AuthState =
+  | { readonly state: 'initializing' }
+  | SignedOutAuthState
+  | LoadingUserDataAuthState
+  | SignedInAuthState;
 
 /**
  * Query
  * TODO: refresh
  */
-export type QueryStateError = PQueryError;
 export type QueryState =
   | {
       readonly state: 'initializing';

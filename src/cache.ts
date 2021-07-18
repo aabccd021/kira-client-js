@@ -1,6 +1,7 @@
 import { DocKey } from 'kira-nosql';
 
 import {
+  AuthState,
   BaseState,
   DocState,
   Listener,
@@ -125,16 +126,16 @@ function serializeQuery({ collection, orderByField, orderDirection }: Query): st
 /**
  * Auth
  */
-export function setAuth<E, SIO>(newAuth: AuthState<E, SIO>): void {
+export function setAuth(newAuth: AuthState): void {
   setState(authKey, newAuth);
 }
 
-export function onAuthChange<E, SIO>(listener: Listener<AuthState<E, SIO>>): Unsubscribe {
+export function onAuthChange(listener: Listener<AuthState>): Unsubscribe {
   return subscribe(authKey, listener);
 }
 
-export function getAuth<E, SIO>(): AuthState<E, SIO> | undefined {
-  return getState<AuthState<E, SIO>>(authKey);
+export function getAuth(): AuthState | undefined {
+  return getState(authKey);
 }
 
 /**

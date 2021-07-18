@@ -1,39 +1,41 @@
 import { DocKey, Either, ReadDocData } from 'kira-nosql';
 
 import { AuthContext, Query } from './data';
+import {
+  PGetNewDocIdError,
+  POnStateChangedError,
+  PQueryError,
+  PReadDocError,
+  PSetDocError,
+} from './error';
 import { Unsubscribe } from './util';
 
 // Auth Provider
-export type ApUserCredToId<UC> = (userCred: UC) => string;
-export type ApSignOut = () => void;
-export type ApSignIn<SIO> = (sio: SIO) => void;
-export type ApOnStateChanged<E, UC> = (on: {
+
+export type SignInOption = { readonly provider: 'google'; readonly with: 'popup' };
+
+export type PUserCredToId<UC> = (userCred: UC) => string;
+
+export type PSignOut = () => void;
+
+export type PSignIn = (sio: SignInOption) => void;
+
+export type POnStateChanged<UC> = (on: {
   readonly signIn: (p: { readonly userCred: UC }) => void;
   readonly signOut: () => void;
-  readonly error: (p: { readonly error: E }) => void;
+  readonly error: (p: { readonly error: POnStateChangedError }) => void;
 }) => Unsubscribe;
 
 // DB Provider
-export type DbpReadResult =
-  | { readonly state: 'exists'; readonly data: DocData }
+export type PReadDocResult =
+  | { readonly state: 'exists'; readonly data: ReadDocData }
   | { readonly state: 'notExists' };
 
-export type PReadDocError = {
-  readonly type: 'readDoc';
-};
-export type PReadDoc = (key: DocKey) => Promise<Either<DbpReadResult, PReadDocError>>;
-
-export type PGetNewDocIdError = {
-  readonly type: 'getNewDocId';
-};
+export type PReadDoc = (key: DocKey) => Promise<Either<PReadDocResult, PReadDocError>>;
 
 export type PGetNewDocId = (p: {
   readonly colName: string;
 }) => Promise<Either<string, PGetNewDocIdError>>;
-
-export type PSetDocError = {
-  readonly type: 'setDoc';
-};
 
 export type PSetDoc = (param: {
   readonly key: DocKey;
@@ -41,13 +43,10 @@ export type PSetDoc = (param: {
 }) => Promise<Either<undefined, PSetDocError>>;
 
 export type DbpQueryResult<DBC> = {
-  readonly docs: ReadonlyArray<{ readonly key: DocKey; readonly data: DocData }>;
+  readonly docs: readonly { readonly key: DocKey; readonly data: ReadDocData }[];
   readonly cursor?: DBC;
 };
 
-export type PQueryError = {
-  readonly type: 'pQuery';
-};
 export type PQuery<DBC> = (
   query: Query,
   latestCursor?: DBC

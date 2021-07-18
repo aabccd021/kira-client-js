@@ -61,9 +61,17 @@ export function makeCreateDoc({
           ocToDoc,
         });
         if (createdDocKey.tag === 'left') {
-          createDocState.set({ state: 'error', reset, error: createdDocKey.error });
+          createDocState.set({
+            state: 'error',
+            reset,
+            error: createdDocKey.error,
+          });
         } else {
-          createDocState.set({ state: 'created', reset, createdDocKey: createdDocKey.value });
+          createDocState.set({
+            state: 'created',
+            reset,
+            createdDocKey: createdDocKey.value,
+          });
           onCreated?.(createdDocKey.value);
         }
       },

@@ -1,17 +1,16 @@
-import { Dictionary, DocKey, Either } from 'kira-nosql';
+import { DocKey, Either } from 'kira-nosql';
 
 import { getDoc, setDoc } from '../cache';
 import {
   CreateDocError,
-  OcField,
+  DocState,
+  OcDoc,
   OcToDoc,
-  OcToDocError,
   PGetNewDocId,
   PGetNewDocIdError,
   PReadDoc,
   PReadDocError,
   PSetDoc,
-  PSetDocError,
 } from '../types';
 
 export async function readDoc(args: {
@@ -22,11 +21,15 @@ export async function readDoc(args: {
   };
   readonly key: DocKey;
   readonly ocToDoc: OcToDoc;
-}): Promise<Either<undefined, PReadDocError>> {
+}): Promise<Either<DocState, PReadDocError>> {
   const { provider, key, ocToDoc } = args;
 
   const cached = getDoc(key);
-  if (cached) return { tag: 'right', value: undefined };
+  if (cached) {
+    return { tag: 'right', value: cached };
+  }
+
+  const refresh = () => readDoc(args);
 
   const remoteDoc = await provider.readDoc(key);
   if (remoteDoc.tag === 'left') {
@@ -35,54 +38,60 @@ export async function readDoc(args: {
       doc: {
         state: 'error',
         error: remoteDoc.error,
-        refresh: () => readDoc(args),
+        refresh,
       },
     });
     return remoteDoc;
   }
 
-  setDoc({
-    key,
-    doc:
-      remoteDoc.value.state === 'notExists'
-        ? {
-            state: 'notExists',
-            create: (ocDoc) => {
-              setDoc({
-                key,
-                doc: { state: 'creating', refresh: () => readDoc(args) },
-              });
-              createDoc({
-                colName: key.col,
-                id: key.id,
-                ocDoc,
-                ocToDoc,
-                provider,
-              });
-            },
-          }
-        : { state: 'exists', id: key.id, data: remoteDoc.value.data },
-  });
+  const doc: DocState =
+    remoteDoc.value.state === 'notExists'
+      ? {
+          state: 'notExists',
+          create: (ocDoc) => {
+            setDoc({
+              key,
+              doc: {
+                state: 'creating',
+                refresh,
+              },
+            });
+            createDoc({
+              colName: key.col,
+              id: key.id,
+              ocDoc,
+              ocToDoc,
+              provider,
+            });
+          },
+        }
+      : {
+          state: 'exists',
+          id: key.id,
+          data: remoteDoc.value.data,
+        };
 
-  return { tag: 'right', value: undefined };
+  setDoc({ key, doc });
+
+  return { tag: 'right', value: doc };
 }
 
 // TODO: add to list on create doc
 export async function createDoc({
   colName,
-  provider,
   id: givenId,
   ocDoc,
   ocToDoc,
+  provider,
 }: {
   readonly colName: string;
+  readonly id?: string;
+  readonly ocDoc: OcDoc;
+  readonly ocToDoc: OcToDoc;
   readonly provider: {
     readonly getNewDocId: PGetNewDocId;
     readonly setDoc: PSetDoc;
   };
-  readonly id?: string;
-  readonly ocDoc: Dictionary<OcField>;
-  readonly ocToDoc: OcToDoc;
 }): Promise<Either<DocKey, CreateDocError>> {
   const id: Either<string, PGetNewDocIdError> = givenId
     ? { tag: 'right', value: givenId }

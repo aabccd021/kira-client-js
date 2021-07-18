@@ -1,8 +1,11 @@
 import { Dictionary, Either, ReadDocData, ReadDocSnapshot } from 'kira-nosql';
 
+import { OcToDocError } from './error';
+
 // On Create
-export type OcToDocError = { readonly type: '_' };
-export type OcToDoc = (ocDoc: Dictionary<OcField>) => Promise<Either<ReadDocData, OcToDocError>>;
+export type OcToDoc = (ocDoc: OcDoc) => Promise<Either<ReadDocData, OcToDocError>>;
+
+export type OcDoc = Dictionary<OcField>;
 
 export type OcField = StringOcField | ImageOcField | RefOcField;
 
@@ -38,7 +41,7 @@ export type Query = {
 };
 
 // Etc
-export type UserCredToDefaultDOc<UC> = (userCred: UC) => ReadDocData;
+export type UserCredToDefaultDoc<UC> = (userCred: UC) => OcDoc;
 
 // Context
 export type AuthContext =

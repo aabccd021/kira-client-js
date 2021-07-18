@@ -1,6 +1,6 @@
 import { onQueryStateChange } from '../cache';
 import { fetchQuery } from '../service';
-import { Observable, PQuery, PQueryError, Query, QueryState } from '../types';
+import { Observable, PQuery, Query, QueryState } from '../types';
 
 export function makeQuery<DBC>({
   dbpQuery,
