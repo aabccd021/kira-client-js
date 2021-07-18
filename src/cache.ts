@@ -1,15 +1,12 @@
-import { Dictionary } from 'kira-core';
+import { DocKey } from 'kira-nosql';
 
 import {
-  AuthState,
   BaseState,
-  DocKey,
   DocState,
   Listener,
   NeverUndefined,
   Observable,
   Query,
-  QueryState,
   Subject,
   Unsubscribe,
 } from './types';
@@ -21,11 +18,13 @@ const _debug_logOnSetState = false;
 // Disallow undefined state so state can be set if not undefined when first subscribed
 type Cached<T extends BaseState> = {
   readonly state: NeverUndefined<T> | undefined;
-  readonly listeners: Dictionary<Listener<T>>;
+  // eslint-disable-next-line functional/prefer-readonly-type
+  readonly listeners: { [key: string]: Listener<T> };
 };
 
 // global Cache
-const cache: Dictionary<Cached<BaseState>> = {};
+// eslint-disable-next-line functional/prefer-readonly-type
+const cache: { [key: string]: Cached<BaseState> } = {};
 
 // eslint-disable-next-line functional/no-let
 let listenerId = 0;
@@ -114,8 +113,8 @@ function getState<T>(key: string): T | undefined {
  */
 const authKey = 'auth';
 
-function serializeDocKey({ collection, id }: DocKey): string {
-  return `doc-${collection}-${id}`;
+function serializeDocKey({ col, id }: DocKey): string {
+  return `doc-${col}-${id}`;
 }
 
 function serializeQuery({ collection, orderByField, orderDirection }: Query): string {
@@ -140,9 +139,9 @@ export function getAuth<E, SIO>(): AuthState<E, SIO> | undefined {
 /**
  * Doc
  */
-export function setDoc<E>(key: DocKey, newDoc: DocState<E>): void {
+export function setDoc({ key, doc }: { readonly key: DocKey; readonly doc: DocState }): void {
   const serializedKey = serializeDocKey(key);
-  setState(serializedKey, newDoc);
+  setState(serializedKey, doc);
 }
 
 export function onDocChange<E>(key: DocKey, listener: Listener<DocState<E>>): Unsubscribe {
@@ -150,7 +149,7 @@ export function onDocChange<E>(key: DocKey, listener: Listener<DocState<E>>): Un
   return subscribe(serializedKey, listener);
 }
 
-export function getDoc<E>(key: DocKey): DocState<E> | undefined {
+export function getDoc(key: DocKey): DocState | undefined {
   const serializedKey = serializeDocKey(key);
   return getState(serializedKey);
 }

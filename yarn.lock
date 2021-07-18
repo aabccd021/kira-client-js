@@ -3078,6 +3078,14 @@ kira-core@^0.3.14:
   resolved "https://registry.yarnpkg.com/kira-core/-/kira-core-0.3.14.tgz#5e84c10ba1c47a7ce37f71340234642f332b1a18"
   integrity sha512-ipmHmBw+1LjU8WAOMeHfCl5072E81MF3xakBQrYz6Z0HAmjI1nKPlGWBRXfyC+kcBqL6jHEvXvG2d520OD+Jeg==
 
+kira-nosql@^0.1.17:
+  version "0.1.17"
+  resolved "https://registry.yarnpkg.com/kira-nosql/-/kira-nosql-0.1.17.tgz#5507a1056022a27faea41e6036e74778bd256140"
+  integrity sha512-WNT0bSB993eRV0AiMulyySyIYzhl6FMeuo++/ns75dpxSmamAoB9mBxEkd52MZnCm/fkiSy4nz4xTMw1M6Fcyw==
+  dependencies:
+    assert-never "^1.2.1"
+    kira-core "^0.3.14"
+
 kleur@^3.0.3:
   version "3.0.3"
   resolved "https://registry.yarnpkg.com/kleur/-/kleur-3.0.3.tgz#a79c9ecc86ee1ce3fa6206d1216c501f147fc07e"

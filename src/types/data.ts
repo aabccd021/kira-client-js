@@ -1,71 +1,44 @@
-import { Dictionary } from 'kira-core';
+import { Dictionary, Either, ReadDocData, ReadDocSnapshot } from 'kira-nosql';
 
-// Document Key
-export type DocKey<C extends string = string> = { readonly collection: C; readonly id: string };
+// On Create
+export type OcToDocError = { readonly type: '_' };
+export type OcToDoc = (ocDoc: Dictionary<OcField>) => Promise<Either<ReadDocData, OcToDocError>>;
 
-// Document Key
-export type Doc<C extends string = string, T extends DocData = DocData> = DocKey<C> & T;
+export type OcField = StringOcField | ImageOcField | RefOcField;
 
-// ON READ LOCAL document data
-export type DocData = { readonly [key: string]: DocField };
-export type DocField = string | number | Date | DocImageField | DocReferenceField;
-export type DocReferenceField = { readonly id: string } & DocData;
-
-// ON CREATE LOCAL document data
-export type OCDocData = { readonly [key: string]: OCDocField };
-export type OCDocField = string | { readonly file: File } | DocImageField | { readonly id: string };
-
-// ON CREATE REMOTE document data
-export type OCRDocData = { readonly [key: string]: OCRDocField };
-export type OCRDocField =
-  | OCRStringField
-  | OCRCountField
-  | OCRImageField
-  | OCRCreationTimeField
-  | OCRReferenceField
-  | OCROwnerField;
-export type OCRStringField = {
+export type StringOcField = {
   readonly type: 'string';
   readonly value: string;
 };
-export type OCRCountField = {
-  readonly type: 'count';
-  readonly countedCol: string;
-  readonly groupByRef: string;
-};
-export type OCRImageField = {
+
+export type ImageOcField = {
   readonly type: 'image';
-  readonly value: { readonly url: string };
-};
-export type OCRCreationTimeField = {
-  readonly type: 'creationTime';
-};
-export type OCROwnerField = {
-  readonly type: 'owner';
-  readonly syncFields?: Dictionary<true>;
-  readonly value: { readonly id: string; readonly user: DocData };
-};
-// TODO: rename to ref, use interop
-export type OCRReferenceField = {
-  readonly type: 'ref';
-  readonly refCol: string;
-  readonly syncFields?: Dictionary<true>;
-  readonly value: { readonly id: string; readonly doc: DocData };
+  readonly source:
+    | {
+        readonly type: 'file';
+        readonly value: File;
+      }
+    | {
+        readonly type: 'url';
+        readonly value: string;
+      };
 };
 
-// Fields
-export type DocImageField = { readonly url: string };
+export type RefOcField = {
+  readonly type: 'ref';
+  readonly dOc: ReadDocSnapshot;
+};
 
 // Query
-export type Query<T extends string = string> = {
-  readonly collection: T;
+export type Query = {
+  readonly collection: string;
   readonly limit?: number;
   readonly orderByField?: string;
   readonly orderDirection?: 'asc' | 'desc';
 };
 
 // Etc
-export type UserCredToDefaultDoc<UC, T extends OCDocData = OCDocData> = (userCred: UC) => T;
+export type UserCredToDefaultDOc<UC> = (userCred: UC) => ReadDocData;
 
 // Context
 export type AuthContext =

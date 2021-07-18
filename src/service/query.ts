@@ -24,7 +24,7 @@ export async function fetchQuery<DBC, E>({
   }
 
   const queryResult = await dbpQuery(query, cursor);
-  if (queryResult._tag === 'left') {
+  if (queryResult.tag === 'left') {
     setQueryState(query, {
       state: 'error',
       error: queryResult.error,

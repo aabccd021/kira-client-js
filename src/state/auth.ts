@@ -1,16 +1,13 @@
-import { Schema_1, Schema_3 } from 'kira-core';
-
 import { getAuth, onAuthChange, onDocChange, setAuth } from '../cache';
-import { createDoc, readDoc } from '../service';
 import {
   ApOnStateChanged,
   ApSignIn,
   ApSignOut,
   ApUserCredToId,
   AuthState,
-  DbpGetNewDocId,
-  DbpReadDoc,
-  DbpSetDoc,
+  PGetNewDocId,
+  PReadDoc,
+  PSetDoc,
   DocKey,
   Observable,
   OcToOcrDocField,
@@ -25,26 +22,26 @@ export function makeAuth<E, SIO>(): Observable<AuthState<E, SIO>> {
   };
 }
 
-export function initAuth<S extends Schema_1 | Schema_3, E, SIO, UC>({
+export function initAuth<E, SIO, UC>({
   dbpGetNewDocId,
   dbpReadDoc,
   dbpSetDoc,
   ocToOcrDocField,
   onAuthStateChanged,
-  schema,
   signIn,
   signOut,
+  userCol,
   userCredToDefaultDoc,
   userCredToId,
 }: {
-  readonly dbpGetNewDocId: DbpGetNewDocId<E>;
-  readonly dbpReadDoc: DbpReadDoc<E>;
-  readonly dbpSetDoc: DbpSetDoc<E>;
+  readonly dbpGetNewDocId: PGetNewDocId<E>;
+  readonly dbpReadDoc: PReadDoc<E>;
+  readonly dbpSetDoc: PSetDoc<E>;
   readonly ocToOcrDocField: OcToOcrDocField<S, E>;
   readonly onAuthStateChanged: ApOnStateChanged<E, UC>;
-  readonly schema: S;
   readonly signIn: ApSignIn<SIO>;
   readonly signOut: ApSignOut;
+  readonly userCol: string;
   readonly userCredToDefaultDoc: UserCredToDefaultDoc<UC>;
   readonly userCredToId: ApUserCredToId<UC>;
 }): Unsubscribe {
@@ -56,7 +53,7 @@ export function initAuth<S extends Schema_1 | Schema_3, E, SIO, UC>({
       const id = userCredToId(userCred);
       setAuth<E, SIO>({ state: 'loadingUserData', signOut, id });
 
-      const userDocKey: DocKey = { collection: schema.userCol, id };
+      const userDocKey: DocKey = { collection: userCol, id };
 
       unsubscribeDocListener = onDocChange<E>(userDocKey, (cachedUser) => {
         if (cachedUser.state === 'exists') {
@@ -70,15 +67,15 @@ export function initAuth<S extends Schema_1 | Schema_3, E, SIO, UC>({
         }
 
         if (cachedUser.state === 'notExists') {
-          createDoc({
-            colName: userDocKey.collection,
-            dbpGetNewDocId,
-            dbpSetDoc,
-            id,
-            ocDocData: userCredToDefaultDoc(userCred),
-            ocToOcrDocField,
-            schema,
-          });
+          // createDoc({
+          //   colName: userDocKey.collection,
+          //   dbpGetNewDocId,
+          //   dbpSetDoc,
+          //   id,
+          //   ocDocData: userCredToDefaultDoc(userCred),
+          //   ocToOcrDocField,
+          //   schema,
+          // });
           return;
         }
 
@@ -90,14 +87,14 @@ export function initAuth<S extends Schema_1 | Schema_3, E, SIO, UC>({
           });
         }
       });
-      readDoc({
-        dbpGetNewDocId,
-        dbpReadDoc,
-        dbpSetDoc,
-        key: userDocKey,
-        ocToOcrDocField,
-        schema,
-      });
+      // readDoc({
+      //   dbpGetNewDocId,
+      //   dbpReadDoc,
+      //   dbpSetDoc,
+      //   key: userDocKey,
+      //   ocToOcrDocField,
+      //   schema,
+      // });
     },
 
     signOut: () => {

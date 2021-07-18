@@ -1,12 +1,10 @@
-import { Schema } from 'kira-core';
-
 import { getAuth, makeSubject, onAuthChange, subjectToObservable } from '../cache';
 import { createDoc } from '../service';
 import {
   AuthError,
   CreateDocState,
-  DbpGetNewDocId,
-  DbpSetDoc,
+  PGetNewDocId,
+  PSetDoc,
   DocKey,
   Observable,
   OcToOcrDocField,
@@ -32,8 +30,8 @@ export function makeCreateDoc<S extends Schema, E>({
   schema,
 }: {
   readonly colName: string;
-  readonly dbpGetNewDocId: DbpGetNewDocId<E>;
-  readonly dbpSetDoc: DbpSetDoc<E>;
+  readonly dbpGetNewDocId: PGetNewDocId<E>;
+  readonly dbpSetDoc: PSetDoc<E>;
   readonly ocToOcrDocField: OcToOcrDocField<S, E>;
   readonly onCreated?: OnCreated<DocKey>;
   readonly onReset?: OnReset;
@@ -60,12 +58,12 @@ export function makeCreateDoc<S extends Schema, E>({
         const createdDocKey = await createDoc({
           colName,
           ocDocData: docData,
-          dbpSetDoc,
+          pSetDoc: dbpSetDoc,
           dbpGetNewDocId,
           ocToOcrDocField,
           schema,
         });
-        if (createdDocKey._tag === 'left') {
+        if (createdDocKey.tag === 'left') {
           createDocState.set({ state: 'error', reset, error: createdDocKey.error });
         } else {
           createDocState.set({ state: 'created', reset, createdDocKey: createdDocKey.value });

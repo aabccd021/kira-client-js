@@ -1,5 +1,7 @@
-import { AuthContext, DocData, DocKey, OCRDocData, Query } from './data';
-import { Either, Unsubscribe } from './util';
+import { DocKey, Either, ReadDocData } from 'kira-nosql';
+
+import { AuthContext, Query } from './data';
+import { Unsubscribe } from './util';
 
 // Auth Provider
 export type ApUserCredToId<UC> = (userCred: UC) => string;
@@ -15,9 +17,29 @@ export type ApOnStateChanged<E, UC> = (on: {
 export type DbpReadResult =
   | { readonly state: 'exists'; readonly data: DocData }
   | { readonly state: 'notExists' };
-export type DbpReadDoc<E> = (key: DocKey) => Promise<Either<DbpReadResult, E>>;
-export type DbpGetNewDocId<E> = (p: { readonly colName: string }) => Promise<Either<string, E>>;
-export type DbpSetDoc<E> = (key: DocKey, docData: OCRDocData) => Promise<Either<undefined, E>>;
+
+export type PReadDocError = {
+  readonly type: 'readDoc';
+};
+export type PReadDoc = (key: DocKey) => Promise<Either<DbpReadResult, PReadDocError>>;
+
+export type PGetNewDocIdError = {
+  readonly type: 'getNewDocId';
+};
+
+export type PGetNewDocId = (p: {
+  readonly colName: string;
+}) => Promise<Either<string, PGetNewDocIdError>>;
+
+export type PSetDocError = {
+  readonly type: 'setDoc';
+};
+
+export type PSetDoc = (param: {
+  readonly key: DocKey;
+  readonly data: ReadDocData;
+}) => Promise<Either<undefined, PSetDocError>>;
+
 export type DbpQueryResult<DBC> = {
   readonly docs: ReadonlyArray<{ readonly key: DocKey; readonly data: DocData }>;
   readonly cursor?: DBC;
