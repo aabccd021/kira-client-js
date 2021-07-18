@@ -5,7 +5,7 @@ import { createDoc, readDoc } from '../service';
 import {
   AuthState,
   Observable,
-  OcToDoc,
+  OcToField,
   PGetNewDocId,
   POnStateChanged,
   PReadDoc,
@@ -25,14 +25,14 @@ export function makeAuth(): Observable<AuthState> {
 }
 
 export function initAuth<UC>({
-  ocToDoc,
+  ocToField,
   userCol,
   userCredToDefaultDoc,
   userCredToId,
   provider,
 }: {
   readonly userCol: string;
-  readonly ocToDoc: OcToDoc;
+  readonly ocToField: OcToField;
   readonly provider: {
     readonly onAuthStateChanged: POnStateChanged<UC>;
     readonly signIn: PSignIn;
@@ -70,7 +70,7 @@ export function initAuth<UC>({
             colName: userCol,
             id,
             ocDoc: userCredToDefaultDoc(userCred),
-            ocToDoc,
+            ocToField,
             provider,
           });
           return;
@@ -86,7 +86,7 @@ export function initAuth<UC>({
       });
       readDoc({
         key: userDocKey,
-        ocToDoc,
+        ocToField,
         provider: { ...provider },
       });
     },

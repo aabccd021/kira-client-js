@@ -1,6 +1,6 @@
-export type CreateDocError = OcToDocError | PGetNewDocIdError | PSetDocError;
+export type CreateDocError = OcToFieldError | PGetNewDocIdError | PSetDocError;
 
-export type OcToDocError = { readonly type: 'OcToDocError' };
+export type OcToFieldError = { readonly type: 'OcToFieldError' };
 
 // Provider
 export type PReadDocError = { readonly type: 'PReadDocError ' };
@@ -12,6 +12,8 @@ export type PGetNewDocIdError = { readonly type: 'PGetNewDocIdError ' };
 export type PSetDocError = { readonly type: 'PSetDocError ' };
 
 export type PQueryError = { readonly type: 'PQueryError ' };
+
+export type PUploadFileError = { readonly type: 'PUploadFileError ' };
 
 // State
 export type DocStateError = PReadDocError;

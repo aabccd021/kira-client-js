@@ -1,11 +1,12 @@
-import { DocKey, Either } from 'kira-nosql';
+import { DocKey, Either, ReadDocData, ReadField } from 'kira-nosql';
 
 import { getDoc, setDoc } from '../cache';
 import {
   CreateDocError,
   DocState,
   OcDoc,
-  OcToDoc,
+  OcToField,
+  OcToFieldError,
   PGetNewDocId,
   PGetNewDocIdError,
   PReadDoc,
@@ -20,9 +21,9 @@ export async function readDoc(args: {
     readonly setDoc: PSetDoc;
   };
   readonly key: DocKey;
-  readonly ocToDoc: OcToDoc;
+  readonly ocToField: OcToField;
 }): Promise<Either<DocState, PReadDocError>> {
-  const { provider, key, ocToDoc } = args;
+  const { provider, key, ocToField } = args;
 
   const cached = getDoc(key);
   if (cached) {
@@ -60,7 +61,7 @@ export async function readDoc(args: {
               colName: key.col,
               id: key.id,
               ocDoc,
-              ocToDoc,
+              ocToField,
               provider,
             });
           },
@@ -81,13 +82,13 @@ export async function createDoc({
   colName,
   id: givenId,
   ocDoc,
-  ocToDoc,
+  ocToField,
   provider,
 }: {
   readonly colName: string;
   readonly id?: string;
   readonly ocDoc: OcDoc;
-  readonly ocToDoc: OcToDoc;
+  readonly ocToField: OcToField;
   readonly provider: {
     readonly getNewDocId: PGetNewDocId;
     readonly setDoc: PSetDoc;
@@ -101,7 +102,26 @@ export async function createDoc({
     return id;
   }
 
-  const doc = await ocToDoc(ocDoc);
+  const doc = await Promise.all(
+    Object.entries(ocDoc).map<
+      Promise<{ readonly fieldName: string; readonly field: Either<ReadField, OcToFieldError> }>
+    >(([fieldName, ocField]) => ocToField(ocField).then((field) => ({ fieldName, field })))
+  ).then((doc) =>
+    doc.reduce<Either<ReadDocData, OcToFieldError>>(
+      (acc, { fieldName, field }) => {
+        if (acc.tag === 'left') return acc;
+        if (field.tag === 'left') return field;
+        return {
+          tag: 'right',
+          value: {
+            ...acc.value,
+            [fieldName]: field.value,
+          },
+        };
+      },
+      { tag: 'right', value: {} }
+    )
+  );
 
   if (doc.tag === 'left') return doc;
 

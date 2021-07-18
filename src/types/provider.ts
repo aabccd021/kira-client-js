@@ -7,11 +7,11 @@ import {
   PQueryError,
   PReadDocError,
   PSetDocError,
+  PUploadFileError,
 } from './error';
 import { Unsubscribe } from './util';
 
-// Auth Provider
-
+// Auth
 export type SignInOption = { readonly provider: 'google'; readonly with: 'popup' };
 
 export type PUserCredToId<UC> = (userCred: UC) => string;
@@ -26,7 +26,7 @@ export type POnStateChanged<UC> = (on: {
   readonly error: (p: { readonly error: POnStateChangedError }) => void;
 }) => Unsubscribe;
 
-// DB Provider
+// DB
 export type PReadDocResult =
   | { readonly state: 'exists'; readonly data: ReadDocData }
   | { readonly state: 'notExists' };
@@ -42,7 +42,7 @@ export type PSetDoc = (param: {
   readonly data: ReadDocData;
 }) => Promise<Either<undefined, PSetDocError>>;
 
-export type DbpQueryResult<DBC> = {
+export type PQueryResult<DBC> = {
   readonly docs: readonly { readonly key: DocKey; readonly data: ReadDocData }[];
   readonly cursor?: DBC;
 };
@@ -50,13 +50,13 @@ export type DbpQueryResult<DBC> = {
 export type PQuery<DBC> = (
   query: Query,
   latestCursor?: DBC
-) => Promise<Either<DbpQueryResult<DBC>, PQueryError>>;
+) => Promise<Either<PQueryResult<DBC>, PQueryError>>;
 
-// Storage Provider
-export type SpUploadFile<E> = (args: {
+// Storage
+export type PUploadFile = (args: {
   readonly id: string;
   readonly colName: string;
   readonly fieldName: string;
   readonly file: File;
   readonly auth: AuthContext;
-}) => Promise<Either<{ readonly downloadUrl: string }, E>>;
+}) => Promise<Either<{ readonly downloadUrl: string }, PUploadFileError>>;

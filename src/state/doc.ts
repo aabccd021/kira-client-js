@@ -1,11 +1,11 @@
 import { onDocChange } from '../cache';
 import { readDoc } from '../service';
-import { DocState, Observable, OcToDoc, PGetNewDocId, PReadDoc, PSetDoc } from '../types';
+import { DocState, Observable, OcToField, PGetNewDocId, PReadDoc, PSetDoc } from '../types';
 
 export function makeDoc({
   col,
   provider,
-  ocToDoc,
+  ocToField,
   id,
 }: {
   readonly col: string;
@@ -15,14 +15,14 @@ export function makeDoc({
     readonly readDoc: PReadDoc;
     readonly setDoc: PSetDoc;
   };
-  readonly ocToDoc: OcToDoc;
+  readonly ocToField: OcToField;
 }): Observable<DocState> {
   return {
     initialState: id ? { state: 'initializing' } : { state: 'keyIsEmpty' },
     onChange: id
       ? (listener) => {
           const key = { col, id };
-          readDoc({ key, ocToDoc, provider });
+          readDoc({ key, ocToField, provider });
           return onDocChange(key, listener);
         }
       : undefined,

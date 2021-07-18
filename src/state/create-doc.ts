@@ -5,7 +5,7 @@ import { createDoc } from '../service';
 import {
   CreateDocState,
   Observable,
-  OcToDoc,
+  OcToField,
   OnCreated,
   OnReset,
   PGetNewDocId,
@@ -25,7 +25,7 @@ export function makeCreateDoc({
   onCreated,
   onReset,
   ownerless,
-  ocToDoc,
+  ocToField,
 }: {
   readonly colName: string;
   readonly provider: {
@@ -35,7 +35,7 @@ export function makeCreateDoc({
   readonly onCreated?: OnCreated<DocKey>;
   readonly onReset?: OnReset;
   readonly ownerless?: true;
-  readonly ocToDoc: OcToDoc;
+  readonly ocToField: OcToField;
 }): Observable<CreateDocState> {
   const createDocState = makeSubject<CreateDocState>({ state: 'initializing' });
 
@@ -58,7 +58,7 @@ export function makeCreateDoc({
           colName,
           ocDoc,
           provider,
-          ocToDoc,
+          ocToField,
         });
         if (createdDocKey.tag === 'left') {
           createDocState.set({

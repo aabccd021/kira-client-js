@@ -1,9 +1,9 @@
-import { Dictionary, Either, ReadDocData, ReadDocSnapshot } from 'kira-nosql';
+import { Dictionary, Either, ReadDocSnapshot, ReadField } from 'kira-nosql';
 
-import { OcToDocError } from './error';
+import { OcToFieldError } from './error';
 
 // On Create
-export type OcToDoc = (ocDoc: OcDoc) => Promise<Either<ReadDocData, OcToDocError>>;
+export type OcToField = (ocField: OcField) => Promise<Either<ReadField, OcToFieldError>>;
 
 export type OcDoc = Dictionary<OcField>;
 
