@@ -1,7 +1,7 @@
-import { Dictionary, ReadDocData } from 'kira-nosql';
+import { Dictionary, DocKey, ReadDocData } from 'kira-nosql';
 
 import { OcField } from './data';
-import { PReadDocError } from './provider';
+import { PQueryError, PReadDocError } from './provider';
 
 // Utils
 export type Reset = () => unknown;
@@ -100,25 +100,30 @@ export type DocState =
 //   | LoadingUserDataAuthState
 //   | SignedInAuthState<E, U>;
 
-// Query
-// TODO: refresh
-// export type QueryState<DBE, C extends string = string> =
-//   | {
-//       readonly state: 'initializing';
-//     }
-//   | {
-//       readonly state: 'error';
-//       readonly error: DBE;
-//     }
-//   | {
-//       readonly state: 'loaded';
-//       readonly keys: ReadonlyArray<DocKey<C>>;
-//       readonly hasMore: true;
-//       readonly fetchNext: () => void;
-//       readonly isFetching: boolean;
-//     }
-//   | {
-//       readonly state: 'loaded';
-//       readonly keys: ReadonlyArray<DocKey<C>>;
-//       readonly hasMore: false;
-//     };
+/**
+ * Query
+ * TODO: refresh
+ */
+export type QueryStateError = PQueryError;
+export type QueryState =
+  | {
+      readonly state: 'initializing';
+    }
+  | {
+      readonly state: 'error';
+      readonly error: QueryStateError;
+    }
+  | LoadedQueryState;
+export type LoadedQueryState =
+  | {
+      readonly state: 'loaded';
+      readonly keys: readonly DocKey[];
+      readonly hasMore: true;
+      readonly fetchNext: () => void;
+      readonly isFetching: boolean;
+    }
+  | {
+      readonly state: 'loaded';
+      readonly keys: readonly DocKey[];
+      readonly hasMore: false;
+    };

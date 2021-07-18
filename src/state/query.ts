@@ -1,14 +1,14 @@
 import { onQueryStateChange } from '../cache';
 import { fetchQuery } from '../service';
-import { DbpQuery, Observable, Query, QueryState } from '../types';
+import { Observable, PQuery, Query, QueryState } from '../types';
 
-export function makeQuery<DBC, E>({
+export function makeQuery<DBC>({
   dbpQuery,
   query,
 }: {
-  readonly dbpQuery: DbpQuery<DBC, E>;
+  readonly dbpQuery: PQuery<DBC>;
   readonly query: Query;
-}): Observable<QueryState<E>> {
+}): Observable<QueryState> {
   return {
     initialState: { state: 'initializing' },
     onChange: (listener) => {

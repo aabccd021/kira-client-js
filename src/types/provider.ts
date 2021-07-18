@@ -44,10 +44,14 @@ export type DbpQueryResult<DBC> = {
   readonly docs: ReadonlyArray<{ readonly key: DocKey; readonly data: DocData }>;
   readonly cursor?: DBC;
 };
-export type DbpQuery<DBC, E> = (
+
+export type PQueryError = {
+  readonly type: 'pQuery';
+};
+export type PQuery<DBC> = (
   query: Query,
-  cursor?: DBC
-) => Promise<Either<DbpQueryResult<DBC>, E>>;
+  latestCursor?: DBC
+) => Promise<Either<DbpQueryResult<DBC>, PQueryError>>;
 
 // Storage Provider
 export type SpUploadFile<E> = (args: {

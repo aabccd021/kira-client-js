@@ -1,42 +1,47 @@
-import { getQueryState, setDoc, setQueryState } from '../cache';
-import { DbpQuery, Query } from '../types';
+import { Either } from 'kira-nosql';
 
-export async function fetchQuery<DBC, E>({
+import { getQueryState, setDoc, setQueryState } from '../cache';
+import { LoadedQueryState, PQuery, PQueryError, Query } from '../types';
+
+export async function fetchQuery<DBC>({
   cursor,
   dbpQuery,
   query,
 }: {
   readonly cursor?: DBC;
-  readonly dbpQuery: DbpQuery<DBC, E>;
+  readonly dbpQuery: PQuery<DBC>;
   readonly query: Query;
-}): Promise<void> {
-  const cached = getQueryState<E>(query);
+}): Promise<Either<LoadedQueryState, PQueryError>> {
+  const cached = getQueryState(query);
 
   if (cached?.state === 'loaded' && cursor === undefined) {
-    return;
+    return { tag: 'right', value: cached };
   }
 
   if (cached?.state === 'loaded' && cached.hasMore) {
-    setQueryState(query, {
-      ...cached,
-      isFetching: true,
+    setQueryState({
+      query,
+      queryState: { ...cached, isFetching: true },
     });
   }
 
   const queryResult = await dbpQuery(query, cursor);
   if (queryResult.tag === 'left') {
-    setQueryState(query, {
-      state: 'error',
-      error: queryResult.error,
+    setQueryState({
+      query,
+      queryState: {
+        state: 'error',
+        error: queryResult.error,
+      },
     });
 
-    return;
+    return queryResult;
   }
 
   queryResult.value.docs.forEach(({ key, data }) => {
-    setDoc(key, {
-      state: 'exists',
-      doc: { ...key, ...data },
+    setDoc({
+      key,
+      doc: { state: 'exists', id: key.id, data },
     });
   });
 
@@ -44,27 +49,25 @@ export async function fetchQuery<DBC, E>({
 
   const newKeys = cached?.state === 'loaded' ? [...cached.keys, ...queriedDocKeys] : queriedDocKeys;
 
-  // has more docs
-  if (query.limit && queryResult.value.docs.length >= query.limit) {
-    setQueryState<E>(query, {
-      state: 'loaded',
-      keys: newKeys,
-      hasMore: true,
-      isFetching: false,
-      fetchNext: () =>
-        fetchQuery({
-          cursor: queryResult.value.cursor,
-          dbpQuery,
-          query,
-        }),
-    });
-    return;
-  }
-
-  // all docs loaded
-  setQueryState<E>(query, {
-    state: 'loaded',
-    keys: newKeys,
-    hasMore: false,
-  });
+  const hasMoreDocs = query.limit && queryResult.value.docs.length >= query.limit;
+  const queryState: LoadedQueryState = hasMoreDocs
+    ? {
+        state: 'loaded',
+        keys: newKeys,
+        hasMore: true,
+        isFetching: false,
+        fetchNext: () =>
+          fetchQuery({
+            cursor: queryResult.value.cursor,
+            dbpQuery,
+            query,
+          }),
+      }
+    : {
+        state: 'loaded',
+        keys: newKeys,
+        hasMore: false,
+      };
+  setQueryState({ query, queryState });
+  return { tag: 'right', value: queryState };
 }

@@ -7,6 +7,7 @@ import {
   NeverUndefined,
   Observable,
   Query,
+  QueryState,
   Subject,
   Unsubscribe,
 } from './types';
@@ -144,7 +145,7 @@ export function setDoc({ key, doc }: { readonly key: DocKey; readonly doc: DocSt
   setState(serializedKey, doc);
 }
 
-export function onDocChange<E>(key: DocKey, listener: Listener<DocState<E>>): Unsubscribe {
+export function onDocChange(key: DocKey, listener: Listener<DocState>): Unsubscribe {
   const serializedKey = serializeDocKey(key);
   return subscribe(serializedKey, listener);
 }
@@ -157,20 +158,23 @@ export function getDoc(key: DocKey): DocState | undefined {
 /**
  * Query
  */
-export function setQueryState<E>(query: Query, newQueryState: QueryState<E>): void {
+export function setQueryState({
+  query,
+  queryState,
+}: {
+  readonly query: Query;
+  readonly queryState: QueryState;
+}): void {
   const serializedKey = serializeQuery(query);
-  setState(serializedKey, newQueryState);
+  setState(serializedKey, queryState);
 }
 
-export function onQueryStateChange<E>(
-  query: Query,
-  listener: Listener<QueryState<E>>
-): Unsubscribe {
+export function onQueryStateChange(query: Query, listener: Listener<QueryState>): Unsubscribe {
   const serializedKey = serializeQuery(query);
   return subscribe(serializedKey, listener);
 }
 
-export function getQueryState<E>(query: Query): QueryState<E> | undefined {
+export function getQueryState(query: Query): QueryState | undefined {
   const serializedKey = serializeQuery(query);
   return getState(serializedKey);
 }
