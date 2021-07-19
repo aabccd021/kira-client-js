@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "assert-never": "^1.2.1",
-    "kira-nosql": "^0.1.17"
+    "kira-nosql": "^0.1.18"
   },
   "devDependencies": {
     "@types/jest": "^26.0.23",

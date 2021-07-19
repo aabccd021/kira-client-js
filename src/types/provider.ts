@@ -1,4 +1,4 @@
-import { DocKey, Either, ReadDocData } from 'kira-nosql';
+import { Doc, DocKey, Either } from 'kira-nosql';
 
 import { AuthContext, Query } from './data';
 import {
@@ -28,7 +28,7 @@ export type POnStateChanged<UC> = (on: {
 
 // DB
 export type PReadDocResult =
-  | { readonly state: 'exists'; readonly data: ReadDocData }
+  | { readonly state: 'exists'; readonly data: Doc }
   | { readonly state: 'notExists' };
 
 export type PReadDoc = (key: DocKey) => Promise<Either<PReadDocResult, PReadDocError>>;
@@ -39,11 +39,11 @@ export type PGetNewDocId = (p: {
 
 export type PSetDoc = (param: {
   readonly key: DocKey;
-  readonly data: ReadDocData;
+  readonly data: Doc;
 }) => Promise<Either<undefined, PSetDocError>>;
 
 export type PQueryResult<DBC> = {
-  readonly docs: readonly { readonly key: DocKey; readonly data: ReadDocData }[];
+  readonly docs: readonly { readonly key: DocKey; readonly data: Doc }[];
   readonly cursor?: DBC;
 };
 

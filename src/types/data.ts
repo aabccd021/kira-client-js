@@ -1,36 +1,39 @@
-import { Dictionary, Either, ReadDocSnapshot, ReadField } from 'kira-nosql';
+import { Dictionary, Either, Field, RefReadField, StringField } from 'kira-nosql';
 
 import { OcToFieldError } from './error';
 
 // On Create
-export type OcToField = (ocField: OcField) => Promise<Either<ReadField, OcToFieldError>>;
+export type OcToField = (param: {
+  readonly ocField: OcField;
+  readonly context: OcToFieldContext;
+}) => Promise<Either<Field, OcToFieldError>>;
+
+export type OcToFieldContext = {
+  readonly colName: string;
+  readonly fieldName: string;
+  readonly id: string;
+};
 
 export type OcDoc = Dictionary<OcField>;
 
 export type OcField = StringOcField | ImageOcField | RefOcField;
 
-export type StringOcField = {
-  readonly type: 'string';
-  readonly value: string;
-};
+export type StringOcField = StringField;
 
 export type ImageOcField = {
   readonly type: 'image';
   readonly source:
     | {
         readonly type: 'file';
-        readonly value: File;
+        readonly file: File;
       }
     | {
         readonly type: 'url';
-        readonly value: string;
+        readonly url: string;
       };
 };
 
-export type RefOcField = {
-  readonly type: 'ref';
-  readonly dOc: ReadDocSnapshot;
-};
+export type RefOcField = RefReadField;
 
 // Query
 export type Query = {

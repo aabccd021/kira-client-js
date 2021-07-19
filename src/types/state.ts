@@ -1,4 +1,4 @@
-import { DocKey, ReadDocData } from 'kira-nosql';
+import { Doc, DocKey } from 'kira-nosql';
 
 import { OcDoc } from './data';
 import {
@@ -41,7 +41,7 @@ export type DocState =
   | {
       readonly state: 'exists';
       readonly id: string;
-      readonly data: ReadDocData;
+      readonly data: Doc;
     };
 
 // Create Doc
@@ -80,7 +80,7 @@ export type SignIn<SIO> = (sio: SIO) => void;
 
 export type SignedInAuthState = {
   readonly state: 'signedIn';
-  readonly user: ReadDocData;
+  readonly user: Doc;
   readonly id: string;
   readonly signOut: SignOut;
   readonly error?: SignedInAuthStateError;

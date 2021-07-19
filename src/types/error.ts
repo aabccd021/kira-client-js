@@ -1,6 +1,6 @@
 export type CreateDocError = OcToFieldError | PGetNewDocIdError | PSetDocError;
 
-export type OcToFieldError = { readonly type: 'OcToFieldError' };
+export type OcToFieldError = PUploadFileError;
 
 // Provider
 export type PReadDocError = { readonly type: 'PReadDocError ' };

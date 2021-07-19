@@ -1,4 +1,4 @@
-import { DocKey, Either, ReadDocData, ReadField } from 'kira-nosql';
+import { Doc, DocKey, Either, Field } from 'kira-nosql';
 
 import { getDoc, setDoc } from '../cache';
 import {
@@ -52,10 +52,7 @@ export async function readDoc(args: {
           create: (ocDoc) => {
             setDoc({
               key,
-              doc: {
-                state: 'creating',
-                refresh,
-              },
+              doc: { state: 'creating', refresh },
             });
             createDoc({
               colName: key.col,
@@ -104,10 +101,15 @@ export async function createDoc({
 
   const doc = await Promise.all(
     Object.entries(ocDoc).map<
-      Promise<{ readonly fieldName: string; readonly field: Either<ReadField, OcToFieldError> }>
-    >(([fieldName, ocField]) => ocToField(ocField).then((field) => ({ fieldName, field })))
+      Promise<{ readonly fieldName: string; readonly field: Either<Field, OcToFieldError> }>
+    >(([fieldName, ocField]) =>
+      ocToField({ ocField, context: { fieldName, colName, id: id.value } }).then((field) => ({
+        fieldName,
+        field,
+      }))
+    )
   ).then((doc) =>
-    doc.reduce<Either<ReadDocData, OcToFieldError>>(
+    doc.reduce<Either<Doc, OcToFieldError>>(
       (acc, { fieldName, field }) => {
         if (acc.tag === 'left') return acc;
         if (field.tag === 'left') return field;
