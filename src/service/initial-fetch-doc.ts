@@ -53,7 +53,7 @@ export function buildInitialFetchDoc<PRDE extends PReadDocError>(args: {
               remoteDoc.state === 'notExists'
                 ? NotExistsDocState({
                     create: (cDoc) => {
-                      setDocState(key, CreatingDocState({}));
+                      setDocState(key, CreatingDocState());
                       createDoc({
                         cDoc,
                         col: key.col,

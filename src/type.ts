@@ -332,8 +332,8 @@ export type CreatingDocState = {
   readonly state: 'Creating';
 };
 
-export function CreatingDocState(p: Omit<CreatingDocState, 'state'>): CreatingDocState {
-  return { ...p, state: 'Creating' };
+export function CreatingDocState(): CreatingDocState {
+  return { state: 'Creating' };
 }
 
 /**
@@ -365,7 +365,7 @@ export type DocState<
   | ContainsErrorDocState<E>
   | CreatingDocState
   | InitializingDocState
-  // | KeyIsEmptyDocState
+  | KeyIsEmptyDocState
   | NotExistsDocState<C>
   | ReadyDocState<R>
 );
