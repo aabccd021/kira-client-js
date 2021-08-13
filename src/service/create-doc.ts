@@ -1,5 +1,4 @@
 import { Doc, DocKey, Spec } from 'kira-core';
-import { BuildDraft } from 'kira-nosql';
 import {
   Either,
   eitherFold,
@@ -11,10 +10,11 @@ import {
   Right,
 } from 'trimop';
 
-import { setDocState } from '../listenable/doc';
 import {
   CDoc,
   CField,
+  CreateDoc,
+  CreateDocResult,
   CToField,
   CToFieldError,
   DocToR,
@@ -23,21 +23,21 @@ import {
   PSetDoc,
   PSetDocError,
   ReadyDocState,
-  RToDoc,
+  SetDocState,
+  UnknownCollectionNameFailure,
 } from '../type';
+
 export function buildCreateDoc<
   CFTE extends CToFieldError,
   PSDE extends PSetDocError,
   PGNDI extends PGetNewDocIdError
 >({
-  buildDraft,
   cToField,
   docToR,
   provider,
-  rToDoc,
   spec,
+  setDocState,
 }: {
-  readonly buildDraft: BuildDraft;
   readonly cDoc: CDoc;
   readonly cToField: CToField<CFTE>;
   readonly col: string;
@@ -47,7 +47,7 @@ export function buildCreateDoc<
     readonly getNewDocId: PGetNewDocId<PGNDI>;
     readonly setDoc: PSetDoc<PSDE>;
   };
-  readonly rToDoc: RToDoc;
+  readonly setDocState: SetDocState;
   readonly spec: Spec;
 }): CreateDoc<CFTE, PSDE, PGNDI> {
   return ({ cDoc, col, id: givenId }) =>
@@ -97,19 +97,12 @@ export function buildCreateDoc<
                     (left) => Promise.resolve(Left(left)),
                     (doc) => {
                       const key: DocKey = { col, id };
-                      setDocState({
-                        buildDraft,
-                        docToR,
-                        key,
-                        newDocState: ReadyDocState({ data: docToR(doc), id }),
-                        rToDoc,
-                        spec,
-                      });
+                      setDocState(key, ReadyDocState({ data: docToR(doc), id }));
                       return provider.setDoc({ data: doc, key, spec }).then((result) =>
                         eitherFold(
                           result,
-                          (left) => Left(left) as Either<PSDE, string>,
-                          () => Right(id)
+                          (left) => Left(left) as Either<PSDE, CreateDocResult>,
+                          () => Right({ doc, id })
                         )
                       );
                     }

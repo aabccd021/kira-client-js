@@ -45,6 +45,140 @@ export type InvalidKeyError = {
 /**
  *
  */
+export type PUserCredToId<U = unknown> = (userCred: U) => string;
+
+/**
+ *
+ */
+export type PSignOutError = { readonly _errorType: 'PSignOutError' };
+
+/**
+ *
+ */
+export type PSignOut<E extends PSignOutError> = () => Either<E, Promise<void>>;
+
+/**
+ *
+ */
+export type PSignInError = { readonly _errorType: 'PSignInError' };
+
+/**
+ *
+ */
+export type PSignIn<E extends PSignInError, SIO = unknown, UC = unknown> = (
+  sio: SIO
+) => Either<E, Promise<UC>>;
+
+/**
+ *
+ */
+export type PReadDocResult =
+  | { readonly data: Doc; readonly state: 'exists' }
+  | { readonly state: 'notExists' };
+
+/**
+ *
+ */
+export type PReadDocError = { readonly _errorType: 'PReadDocError' };
+
+/**
+ *
+ */
+export type PReadDoc<E extends PReadDocError> = (key: DocKey) => Promise<Either<E, PReadDocResult>>;
+
+/**
+ *
+ */
+export type PGetNewDocIdError = { readonly _errorType: 'PGetNewDocIdError' };
+
+/**
+ *
+ */
+export type PGetNewDocId<E extends PGetNewDocIdError> = (p: {
+  readonly col: string;
+}) => Promise<Either<E, string>>;
+
+/**
+ *
+ */
+export type PSetDocError = { readonly _errorType: 'PSetDocError' };
+
+/**
+ *
+ */
+export type PSetDoc<E extends PSetDocError, R = unknown> = (param: {
+  readonly data: Doc;
+  readonly key: DocKey;
+  readonly spec: Spec;
+}) => Promise<Either<E, R>>;
+
+/**
+ *
+ */
+export type PQueryResult<DBC = unknown> = {
+  readonly cursor?: DBC;
+  readonly docs: readonly DocSnapshot[];
+};
+
+/**
+ *
+ */
+export type PQueryError = { readonly _errorType: 'PQueryError' };
+
+/**
+ *
+ */
+export type QueryKey = {
+  readonly limit?: number;
+  readonly orderByField?: string;
+  readonly orderDirection?: 'asc' | 'desc';
+};
+
+/**
+ *
+ */
+export type PQuery<E extends PQueryError, DBC = unknown> = (param: {
+  readonly col: string;
+  readonly key: QueryKey;
+  readonly latestCursor?: DBC;
+}) => Promise<Either<E, PQueryResult<DBC>>>;
+
+/**
+ *
+ */
+export type PUploadImageResult = { readonly downloadUrl: string };
+
+/**
+ *
+ */
+export type PUploadImageError = { readonly _errorType: 'PUploadImageError' };
+
+/**
+ *
+ */
+export type AuthContext =
+  | {
+      readonly id: string;
+      readonly state: 'signedIn';
+    }
+  | {
+      readonly state: 'signedOut';
+    };
+
+/**
+ *
+ */
+export type PUploadImage<E extends PUploadImageError> = (args: {
+  readonly auth: AuthContext;
+  readonly col: string;
+  readonly fieldName: string;
+  readonly file: File;
+  readonly id: string;
+}) => Promise<Either<E, PUploadImageResult>>;
+
+/**
+ *
+ */
 export type ImageRField = {
   readonly url: string;
 };
@@ -138,27 +272,6 @@ export type CToField<E extends CToFieldError> = (param: {
 /**
  *
  */
-export type QueryKey = {
-  readonly limit?: number;
-  readonly orderByField?: string;
-  readonly orderDirection?: 'asc' | 'desc';
-};
-
-/**
- *
- */
-export type AuthContext =
-  | {
-      readonly id: string;
-      readonly state: 'signedIn';
-    }
-  | {
-      readonly state: 'signedOut';
-    };
-
-/**
- *
- */
 export type KeyIsEmptyDocState = {
   readonly state: 'KeyIsEmpty';
 };
@@ -181,13 +294,18 @@ export function InitializingDocState(): InitializingDocState {
 /**
  *
  */
-export type ContainsErrorDocState<E> = {
+export type DocStateError = PReadDocError;
+
+/**
+ *
+ */
+export type ContainsErrorDocState<E extends DocStateError> = {
   readonly error: Left<E>;
   readonly revalidate: () => void;
   readonly state: 'ContainsError';
 };
 
-export function ContainsErrorDocState<E>(
+export function ContainsErrorDocState<E extends DocStateError>(
   p: Omit<ContainsErrorDocState<E>, 'state'>
 ): ContainsErrorDocState<E> {
   return { ...p, state: 'ContainsError' };
@@ -237,7 +355,11 @@ export function ReadyDocState<R extends RDoc>(
 /**
  *
  */
-export type DocState<E, R extends RDoc = RDoc, C extends CDoc = CDoc> = {
+export type DocState<
+  E extends DocStateError = DocStateError,
+  R extends RDoc = RDoc,
+  C extends CDoc = CDoc
+> = {
   readonly state: string;
 } & (
   | ContainsErrorDocState<E>
@@ -247,119 +369,6 @@ export type DocState<E, R extends RDoc = RDoc, C extends CDoc = CDoc> = {
   | NotExistsDocState<C>
   | ReadyDocState<R>
 );
-
-/**
- *
- */
-export type PUserCredToId<U = unknown> = (userCred: U) => string;
-
-/**
- *
- */
-export type PSignOutError = { readonly _errorType: 'PSignOutError' };
-
-/**
- *
- */
-export type PSignOut<E extends PSignOutError> = () => Either<E, Promise<void>>;
-
-/**
- *
- */
-export type PSignInError = { readonly _errorType: 'PSignInError' };
-
-/**
- *
- */
-export type PSignIn<E extends PSignInError, SIO = unknown, UC = unknown> = (
-  sio: SIO
-) => Either<E, Promise<UC>>;
-
-/**
- *
- */
-export type PReadDocResult =
-  | { readonly data: Doc; readonly state: 'exists' }
-  | { readonly state: 'notExists' };
-
-/**
- *
- */
-export type PReadDocError = { readonly _errorType: 'PReadDocError' };
-
-/**
- *
- */
-export type PReadDoc<E extends PReadDocError> = (key: DocKey) => Promise<Either<E, PReadDocResult>>;
-
-/**
- *
- */
-export type PGetNewDocIdError = { readonly _errorType: 'PGetNewDocIdError' };
-
-/**
- *
- */
-export type PGetNewDocId<E extends PGetNewDocIdError> = (p: {
-  readonly col: string;
-}) => Promise<Either<E, string>>;
-
-/**
- *
- */
-export type PSetDocError = { readonly _errorType: 'PSetDocError' };
-
-/**
- *
- */
-export type PSetDoc<E extends PSetDocError, R = unknown> = (param: {
-  readonly data: Doc;
-  readonly key: DocKey;
-  readonly spec: Spec;
-}) => Promise<Either<E, R>>;
-
-/**
- *
- */
-export type PQueryResult<DBC = unknown> = {
-  readonly cursor?: DBC;
-  readonly docs: readonly DocSnapshot[];
-};
-
-/**
- *
- */
-export type PQueryError = { readonly _errorType: 'PQueryError' };
-
-/**
- *
- */
-export type PQuery<E extends PQueryError, DBC = unknown> = (param: {
-  readonly col: string;
-  readonly key: QueryKey;
-  readonly latestCursor?: DBC;
-}) => Promise<Either<E, PQueryResult<DBC>>>;
-
-/**
- *
- */
-export type PUploadImageResult = { readonly downloadUrl: string };
-
-/**
- *
- */
-export type PUploadImageError = { readonly _errorType: 'PUploadImageError' };
-
-/**
- *
- */
-export type PUploadImage<E extends PUploadImageError> = (args: {
-  readonly auth: AuthContext;
-  readonly col: string;
-  readonly fieldName: string;
-  readonly file: File;
-  readonly id: string;
-}) => Promise<Either<E, PUploadImageResult>>;
 
 /**
  * UnknownCollectionNameFailure
@@ -387,6 +396,14 @@ export type CreateDocError<
 /**
  *
  */
+export type CreateDocResult = {
+  readonly doc: Doc;
+  readonly id: string;
+};
+
+/**
+ *
+ */
 export type CreateDoc<
   CFTE extends CToFieldError,
   PSDE extends PSetDocError,
@@ -395,4 +412,13 @@ export type CreateDoc<
   readonly cDoc: CDoc;
   readonly col: string;
   readonly id: Option<string>;
-}) => Promise<Either<CreateDocError<CFTE, PGNDI, PSDE>, string>>;
+}) => Promise<Either<CreateDocError<CFTE, PGNDI, PSDE>, CreateDocResult>>;
+
+/**
+ *
+ */
+export type SetDocState<
+  E extends DocStateError = DocStateError,
+  R extends RDoc = RDoc,
+  C extends CDoc = CDoc
+> = (key: DocKey, newDocState: DocState<E, R, C>) => void;

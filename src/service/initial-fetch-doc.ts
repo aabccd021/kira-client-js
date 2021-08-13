@@ -1,10 +1,10 @@
-import { DocKey, Spec } from 'kira-core';
-import { BuildDraft } from 'kira-nosql';
+import { DocKey } from 'kira-core';
 import { Either, eitherFold, isRight, Left, optionFold, Right, Some } from 'trimop';
 
-import { getDocState, setDocState } from '../listenable/doc';
+import { getDocState } from '../listenable/doc';
 import {
   ContainsErrorDocState,
+  CreateDoc,
   CreatingDocState,
   CToFieldError,
   DocState,
@@ -16,40 +16,33 @@ import {
   PReadDocResult,
   PSetDocError,
   ReadyDocState,
-  RToDoc,
+  SetDocState,
 } from '../type';
-import { CreateDoc } from './create-doc';
 
 export async function initialFetchDoc<PRDE extends PReadDocError>(args: {
-  readonly buildDraft: BuildDraft;
   readonly createDoc: CreateDoc<CToFieldError, PSetDocError, PGetNewDocIdError>;
   readonly docToR: DocToR;
   readonly key: DocKey;
   readonly provider: {
     readonly readDoc: PReadDoc<PRDE>;
   };
-  readonly rToDoc: RToDoc;
-  readonly spec: Spec;
+  readonly setDocState: SetDocState<PRDE>;
 }): Promise<Either<unknown, DocState<PRDE>>> {
-  const { key, provider, buildDraft, docToR, rToDoc, spec, createDoc } = args;
+  const { setDocState, key, provider, docToR, createDoc } = args;
 
-  return optionFold<Promise<Either<PRDE, DocState<PRDE>>>, DocState<unknown>>(
+  return optionFold<Promise<Either<PRDE, DocState<PRDE>>>, DocState>(
     getDocState(key),
     async () => {
       const newDocState = eitherFold<Either<PRDE, DocState<PRDE>>, PRDE, PReadDocResult>(
         await provider.readDoc(key),
         (left) => {
-          setDocState({
-            buildDraft,
-            docToR,
+          setDocState(
             key,
-            newDocState: ContainsErrorDocState({
+            ContainsErrorDocState({
               error: Left(left),
               revalidate: () => initialFetchDoc(args),
-            }),
-            rToDoc,
-            spec,
-          });
+            })
+          );
           return Left(left);
         },
         (remoteDoc) =>
@@ -57,14 +50,7 @@ export async function initialFetchDoc<PRDE extends PReadDocError>(args: {
             remoteDoc.state === 'notExists'
               ? NotExistsDocState({
                   create: (cDoc) => {
-                    setDocState({
-                      buildDraft,
-                      docToR,
-                      key,
-                      newDocState: CreatingDocState({}),
-                      rToDoc,
-                      spec,
-                    });
+                    setDocState(key, CreatingDocState({}));
                     createDoc({
                       cDoc,
                       col: key.col,
@@ -79,14 +65,7 @@ export async function initialFetchDoc<PRDE extends PReadDocError>(args: {
           )
       );
       if (isRight(newDocState)) {
-        setDocState({
-          buildDraft,
-          docToR,
-          key,
-          newDocState: newDocState.right,
-          rToDoc,
-          spec,
-        });
+        setDocState(key, newDocState.right);
       }
       return newDocState;
     },
