@@ -1,5 +1,35 @@
-import { Field, ImageFieldSpec, RefFieldSpec, StringFieldSpec } from 'kira-core';
-import { Dict, Either, Left } from 'trimop';
+import { Doc, Field, ImageFieldSpec, RefFieldSpec, StringFieldSpec } from 'kira-core';
+import { Dict, Either, Left, Option } from 'trimop';
+
+/**
+ *
+ */
+export type Listen<T> = (value: Option<T>) => undefined;
+
+/**
+ *
+ */
+export type Unsubscribe = () => undefined;
+
+/**
+ *
+ */
+export type Listenable<T> = {
+  readonly listens: readonly Listen<T>[];
+  readonly state: Option<T>;
+};
+
+/**
+ *
+ */
+export type DB = Dict<Listenable<unknown>>;
+
+/**
+ *
+ */
+export type InvalidKeyError = {
+  readonly key: string;
+};
 
 /**
  *
@@ -25,6 +55,16 @@ export type RField = string | number | readonly string[] | Date | ImageRField | 
  *
  */
 export type RDoc = Dict<RField>;
+
+/**
+ *
+ */
+export type RToDoc = (doc: RDoc) => Doc;
+
+/**
+ *
+ */
+export type DocToR = (doc: Doc) => RDoc;
 
 /**
  *
@@ -161,8 +201,9 @@ export function CreatingDocState(p: Omit<CreatingDocState, 'state'>): CreatingDo
 /**
  *
  */
-export type ReadyDocState<R extends RDoc> = R & {
-  readonly _id: string;
+export type ReadyDocState<R extends RDoc> = {
+  readonly data: R;
+  readonly id: string;
   readonly state: 'Ready';
 };
 
@@ -175,10 +216,13 @@ export function ReadyDocState<R extends RDoc>(
 /**
  *
  */
-export type DocState<E, R extends RDoc = RDoc, C extends CDoc = CDoc> =
-  | KeyIsEmptyDocState
-  | InitializingDocState
+export type DocState<E, R extends RDoc = RDoc, C extends CDoc = CDoc> = {
+  readonly state: string;
+} & (
   | ContainsErrorDocState<E>
-  | NotExistsDocState<C>
   | CreatingDocState
-  | ReadyDocState<R>;
+  | InitializingDocState
+  | KeyIsEmptyDocState
+  | NotExistsDocState<C>
+  | ReadyDocState<R>
+);
