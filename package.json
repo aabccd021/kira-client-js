@@ -136,6 +136,8 @@
       "functional/no-expression-statement": "off",
       "functional/functional-parameters": "off",
       "functional/no-conditional-statement": "off",
+      "functional/no-mixed-type": "off",
+      "functional/no-return-void": "off",
       "sort-keys-fix/sort-keys-fix": "warn",
       "unused-imports/no-unused-vars": [
         "warn",

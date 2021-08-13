@@ -15,7 +15,8 @@
     "noPropertyAccessFromIndexSignature": true,
     "forceConsistentCasingInFileNames": true,
     "lib": [
-      "ESNext"
+      "ESNext",
+      "DOM"
     ]
   },
   "include": [
