@@ -1,4 +1,15 @@
-import { Doc, Field, ImageFieldSpec, RefFieldSpec, StringFieldSpec } from 'kira-core';
+import {
+  CountFieldSpec,
+  CreationTimeFieldSpec,
+  Doc,
+  DocKey,
+  DocSnapshot,
+  Field,
+  ImageFieldSpec,
+  RefFieldSpec,
+  Spec,
+  StringFieldSpec,
+} from 'kira-core';
 import { Dict, Either, Left, Option } from 'trimop';
 
 /**
@@ -94,14 +105,19 @@ export type CDoc = Dict<CField>;
 /**
  *
  */
-export type CFieldSpec = ImageFieldSpec | StringFieldSpec | RefFieldSpec;
+export type CFieldSpec =
+  | ImageFieldSpec
+  | StringFieldSpec
+  | RefFieldSpec
+  | CountFieldSpec
+  | CreationTimeFieldSpec;
 
 /**
  *
  */
 export type CToFieldContext = {
   readonly col: string;
-  readonly field: CField | undefined;
+  readonly field: Option<CField>;
   readonly fieldName: string;
   readonly id: string;
 };
@@ -109,10 +125,15 @@ export type CToFieldContext = {
 /**
  *
  */
-export type CToField<E> = (param: {
+export type CToFieldError = { readonly _errorType: 'CToFieldError' };
+
+/**
+ *
+ */
+export type CToField<E extends CToFieldError> = (param: {
   readonly context: CToFieldContext;
   readonly fieldSpec: CFieldSpec;
-}) => Promise<Either<E, Field | undefined>>;
+}) => Promise<Either<E, Field>>;
 
 /**
  *
@@ -226,3 +247,116 @@ export type DocState<E, R extends RDoc = RDoc, C extends CDoc = CDoc> = {
   | NotExistsDocState<C>
   | ReadyDocState<R>
 );
+
+/**
+ *
+ */
+export type PUserCredToId<U = unknown> = (userCred: U) => string;
+
+/**
+ *
+ */
+export type PSignOutError = { readonly _errorType: 'PSignOutError' };
+
+/**
+ *
+ */
+export type PSignOut<E extends PSignOutError> = () => Either<E, Promise<void>>;
+
+/**
+ *
+ */
+export type PSignInError = { readonly _errorType: 'PSignInError' };
+
+/**
+ *
+ */
+export type PSignIn<E extends PSignInError, SIO = unknown, UC = unknown> = (
+  sio: SIO
+) => Either<E, Promise<UC>>;
+
+/**
+ *
+ */
+export type PReadDocResult =
+  | { readonly data: Doc; readonly state: 'exists' }
+  | { readonly state: 'notExists' };
+
+/**
+ *
+ */
+export type PReadDocError = { readonly _errorType: 'PReadDocError' };
+
+/**
+ *
+ */
+export type PReadDoc<E extends PReadDocError> = (key: DocKey) => Promise<Either<E, PReadDocResult>>;
+
+/**
+ *
+ */
+export type PGetNewDocIdError = { readonly _errorType: 'PGetNewDocIdError' };
+
+/**
+ *
+ */
+export type PGetNewDocId<E extends PGetNewDocIdError> = (p: {
+  readonly col: string;
+}) => Promise<Either<E, string>>;
+
+/**
+ *
+ */
+export type PSetDocError = { readonly _errorType: 'PSetDocError' };
+
+/**
+ *
+ */
+export type PSetDoc<E extends PSetDocError, R = unknown> = (param: {
+  readonly data: Doc;
+  readonly key: DocKey;
+  readonly spec: Spec;
+}) => Promise<Either<E, R>>;
+
+/**
+ *
+ */
+export type PQueryResult<DBC = unknown> = {
+  readonly cursor?: DBC;
+  readonly docs: readonly DocSnapshot[];
+};
+
+/**
+ *
+ */
+export type PQueryError = { readonly _errorType: 'PQueryError' };
+
+/**
+ *
+ */
+export type PQuery<E extends PQueryError, DBC = unknown> = (param: {
+  readonly col: string;
+  readonly key: QueryKey;
+  readonly latestCursor?: DBC;
+}) => Promise<Either<E, PQueryResult<DBC>>>;
+
+/**
+ *
+ */
+export type PUploadImageResult = { readonly downloadUrl: string };
+
+/**
+ *
+ */
+export type PUploadImageError = { readonly _errorType: 'PUploadImageError' };
+
+/**
+ *
+ */
+export type PUploadImage<E extends PUploadImageError> = (args: {
+  readonly auth: AuthContext;
+  readonly col: string;
+  readonly fieldName: string;
+  readonly file: File;
+  readonly id: string;
+}) => Promise<Either<E, PUploadImageResult>>;

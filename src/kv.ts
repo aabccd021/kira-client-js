@@ -1,4 +1,4 @@
-import { None, Option, optionFold, optionFromNullable, StateController } from 'trimop';
+import { None, Option, optionFold, optionFromNullable, Some, StateController } from 'trimop';
 
 import { DB, Listen, Listenable, Unsubscribe } from './type';
 
@@ -28,7 +28,7 @@ export function getRecord<T>(db: StateController<DB>, key: string): Option<T> {
 export function setRecord<T>(
   dbController: StateController<DB>,
   key: string,
-  newValue: Option<T>
+  newValue: NonNullable<T>
 ): undefined {
   const db = dbController.get();
   const newListens = optionFold(
@@ -36,12 +36,12 @@ export function setRecord<T>(
     () => [],
     (listenable) => listenable.listens
   );
-  newListens.forEach((listen) => listen(newValue));
+  newListens.forEach((listen) => listen(Some(newValue)));
   return dbController.set({
     ...db,
     [key]: {
       listens: newListens,
-      state: newValue,
+      state: Some(newValue),
     },
   });
 }

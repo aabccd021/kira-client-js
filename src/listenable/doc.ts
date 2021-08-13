@@ -78,9 +78,9 @@ function _getDocState<E, R extends RDoc = RDoc, C extends CDoc = CDoc>(
  */
 function _setDocState<E, R extends RDoc = RDoc, C extends CDoc = CDoc>(
   key: DocKey,
-  newDocState: Option<DocState<E, R, C>>
+  newDocState: DocState<E, R, C>
 ): undefined {
-  return setRecord(dbController, serializeDocKey(key), newDocState);
+  return setRecord(dbController, serializeDocKey(key), Some(newDocState));
 }
 
 /**
@@ -137,8 +137,7 @@ async function runTrigger<S extends TriggerSnapshot>({
               doc: docState.state === 'Ready' ? Some(rToDoc(docState.data)) : None(),
               writeDoc: docCommit.writeDoc,
             }),
-            (newDoc) =>
-              Right(_setDocState(key, Some(ReadyDocState({ data: docToR(newDoc), id: docId }))))
+            (newDoc) => Right(_setDocState(key, ReadyDocState({ data: docToR(newDoc), id: docId })))
           )
       );
     });
@@ -169,53 +168,48 @@ export function setDocState<E, R extends RDoc = RDoc, C extends CDoc = CDoc>({
   readonly buildDraft: BuildDraft;
   readonly docToR: DocToR;
   readonly key: DocKey;
-  readonly newDocState: Option<DocState<E, R, C>>;
+  readonly newDocState: DocState<E, R, C>;
   readonly rToDoc: RToDoc;
   readonly spec: Spec;
 }): undefined {
   const oldState = _getDocState(key);
   _setDocState(key, newDocState);
-  optionMapSome(newDocState, (newDocState) => {
-    // onUpdate
-    if (newDocState.state === 'Ready') {
-      optionMapSome(
-        optionFromNullable(getCachedTrigger({ buildDraft, spec })?.[key.col]),
-        (colTrigger) =>
-          optionMapSome(oldState, (oldState) =>
-            oldState.state === 'Ready'
-              ? optionMapSome(colTrigger.onUpdate, (onColDeleteTrigger) =>
-                  Some(
-                    runTrigger<DocChange>({
-                      actionTrigger: onColDeleteTrigger,
-                      docToR,
-                      rToDoc,
-                      snapshot: {
-                        after: rToDoc(newDocState.data),
-                        before: rToDoc(oldState.data),
-                        id: newDocState.id,
-                      },
-                    })
-                  )
+  if (newDocState.state === 'Ready') {
+    optionMapSome(
+      optionFromNullable(getCachedTrigger({ buildDraft, spec })?.[key.col]),
+      (colTrigger) =>
+        optionMapSome(oldState, (oldState) =>
+          oldState.state === 'Ready'
+            ? optionMapSome(colTrigger.onUpdate, (onColDeleteTrigger) =>
+                Some(
+                  runTrigger<DocChange>({
+                    actionTrigger: onColDeleteTrigger,
+                    docToR,
+                    rToDoc,
+                    snapshot: {
+                      after: rToDoc(newDocState.data),
+                      before: rToDoc(oldState.data),
+                      id: newDocState.id,
+                    },
+                  })
                 )
-              : optionMapSome(colTrigger.onCreate, (onColCreateTrigger) =>
-                  Some(
-                    runTrigger<DocSnapshot>({
-                      actionTrigger: onColCreateTrigger,
-                      docToR,
-                      rToDoc,
-                      snapshot: {
-                        doc: rToDoc(newDocState.data),
-                        id: newDocState.id,
-                      },
-                    })
-                  )
+              )
+            : optionMapSome(colTrigger.onCreate, (onColCreateTrigger) =>
+                Some(
+                  runTrigger<DocSnapshot>({
+                    actionTrigger: onColCreateTrigger,
+                    docToR,
+                    rToDoc,
+                    snapshot: {
+                      doc: rToDoc(newDocState.data),
+                      id: newDocState.id,
+                    },
+                  })
                 )
-          )
-      );
-    }
-    // onCreate
-    return Some(undefined);
-  });
+              )
+        )
+    );
+  }
   return undefined;
 }
 
