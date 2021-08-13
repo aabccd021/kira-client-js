@@ -166,8 +166,6 @@ export function buildSetDocState({
 }: {
   readonly buildDraft: BuildDraft;
   readonly docToR: DocToR;
-  readonly key: DocKey;
-  readonly newDocState: DocState;
   readonly rToDoc: RToDoc;
   readonly spec: Spec;
 }): SetDocState {

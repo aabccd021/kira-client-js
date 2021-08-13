@@ -4,14 +4,12 @@ import {
   eitherFold,
   eitherMapRight,
   Left,
-  Option,
   optionFold,
   optionFromNullable,
   Right,
 } from 'trimop';
 
 import {
-  CDoc,
   CField,
   CreateDoc,
   CreateDocResult,
@@ -38,11 +36,8 @@ export function buildCreateDoc<
   spec,
   setDocState,
 }: {
-  readonly cDoc: CDoc;
   readonly cToField: CToField<CFTE>;
-  readonly col: string;
   readonly docToR: DocToR;
-  readonly id: Option<string>;
   readonly provider: {
     readonly getNewDocId: PGetNewDocId<PGNDI>;
     readonly setDoc: PSetDoc<PSDE>;

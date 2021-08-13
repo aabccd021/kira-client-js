@@ -422,3 +422,10 @@ export type SetDocState<
   R extends RDoc = RDoc,
   C extends CDoc = CDoc
 > = (key: DocKey, newDocState: DocState<E, R, C>) => void;
+
+/**
+ *
+ */
+export type InitialFetchDoc<PRDE extends PReadDocError> = (
+  key: DocKey
+) => Promise<Either<unknown, DocState<PRDE>>>;
