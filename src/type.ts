@@ -183,7 +183,7 @@ export function InitializingDocState(): InitializingDocState {
  */
 export type ContainsErrorDocState<E> = {
   readonly error: Left<E>;
-  readonly refresh: () => void;
+  readonly revalidate: () => void;
   readonly state: 'ContainsError';
 };
 
@@ -211,7 +211,6 @@ export function NotExistsDocState<C extends CDoc>(
  *
  */
 export type CreatingDocState = {
-  readonly refresh: () => void;
   readonly state: 'Creating';
 };
 
@@ -225,6 +224,7 @@ export function CreatingDocState(p: Omit<CreatingDocState, 'state'>): CreatingDo
 export type ReadyDocState<R extends RDoc> = {
   readonly data: R;
   readonly id: string;
+  // readonly revalidate: () => void;
   readonly state: 'Ready';
 };
 
@@ -243,7 +243,7 @@ export type DocState<E, R extends RDoc = RDoc, C extends CDoc = CDoc> = {
   | ContainsErrorDocState<E>
   | CreatingDocState
   | InitializingDocState
-  | KeyIsEmptyDocState
+  // | KeyIsEmptyDocState
   | NotExistsDocState<C>
   | ReadyDocState<R>
 );
@@ -360,3 +360,39 @@ export type PUploadImage<E extends PUploadImageError> = (args: {
   readonly file: File;
   readonly id: string;
 }) => Promise<Either<E, PUploadImageResult>>;
+
+/**
+ * UnknownCollectionNameFailure
+ */
+export function UnknownCollectionNameFailure(
+  value: Omit<UnknownCollectionNameFailure, '_errorType'>
+): UnknownCollectionNameFailure {
+  return { _errorType: 'UnknownCollectionNameFailure', ...value };
+}
+
+export type UnknownCollectionNameFailure = {
+  readonly _errorType: 'UnknownCollectionNameFailure';
+  readonly col: string;
+};
+
+/**
+ *
+ */
+export type CreateDocError<
+  CFTE extends CToFieldError,
+  PGNDI extends PGetNewDocIdError,
+  PSDE extends PSetDocError
+> = UnknownCollectionNameFailure | CFTE | PGNDI | PSDE;
+
+/**
+ *
+ */
+export type CreateDoc<
+  CFTE extends CToFieldError,
+  PSDE extends PSetDocError,
+  PGNDI extends PGetNewDocIdError
+> = (p: {
+  readonly cDoc: CDoc;
+  readonly col: string;
+  readonly id: Option<string>;
+}) => Promise<Either<CreateDocError<CFTE, PGNDI, PSDE>, string>>;
