@@ -1,4 +1,4 @@
-import { ImageField, ImageFieldSpec } from 'kira-core';
+import { CountFieldSpec, ImageField, ImageFieldSpec, isImageFieldValue } from 'kira-core';
 import { Either, eitherFold, Left, optionFold, Right, Some } from 'trimop';
 
 import {
@@ -6,9 +6,12 @@ import {
   CToFieldError,
   CToFieldUploadImageError,
   GetAuthState,
-  InvalidCreationFieldTypeError,
+  InvalidTypeCToFieldError,
+  InvalidTypeRToDocError,
   PUploadImage,
   PUploadImageError,
+  RToDocError,
+  RToFieldContext,
 } from '../type';
 
 export async function cToImageField<PUIE extends PUploadImageError>({
@@ -25,10 +28,10 @@ export async function cToImageField<PUIE extends PUploadImageError>({
     field,
     async () =>
       Left(
-        InvalidCreationFieldTypeError({
+        InvalidTypeCToFieldError({
           col,
+          field,
           fieldName,
-          givenFieldValue: field,
         })
       ),
     async (field) => {
@@ -59,12 +62,41 @@ export async function cToImageField<PUIE extends PUploadImageError>({
       }
 
       return Left(
-        InvalidCreationFieldTypeError({
+        InvalidTypeCToFieldError({
           col,
+          field,
           fieldName,
-          givenFieldValue: field,
         })
       );
     }
+  );
+}
+
+export function rToImageField({
+  context: { fieldName, field, col },
+}: {
+  readonly context: RToFieldContext;
+  readonly fieldSpec: ImageFieldSpec;
+}): Either<RToDocError, Some<ImageField>> {
+  return optionFold(
+    field,
+    () =>
+      Left(
+        InvalidTypeRToDocError({
+          col,
+          field,
+          fieldName,
+        })
+      ),
+    (field) =>
+      isImageFieldValue(field)
+        ? Right(Some(ImageField(field)))
+        : Left(
+            InvalidTypeRToDocError({
+              col,
+              field,
+              fieldName,
+            })
+          )
   );
 }

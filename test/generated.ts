@@ -1,12 +1,13 @@
+/* eslint-disable no-use-before-define */
 import { Spec } from 'kira-core';
 import { Left } from 'trimop';
 
-import { cToCountField } from '../src/field/count';
-import { cToCreationTimeField } from '../src/field/creation-time';
-import { cToImageField } from '../src/field/image';
-import { cToRefField } from '../src/field/ref';
-import { cToStringField } from '../src/field/string';
-import { buildRToDoc, rToDoc } from '../src/r-to-doc';
+import { cToCountField, rToCountField } from '../src/field/count';
+import { cToCreationTimeField, rToCreationTimeField } from '../src/field/creation-time';
+import { cToImageField, rToImageField } from '../src/field/image';
+import { cToRefField, rToRefField } from '../src/field/ref';
+import { cToStringField, rToStringField } from '../src/field/string';
+import { buildRToDoc } from '../src/r-to-doc';
 import {
   CToField,
   CToFieldNeverError,
@@ -14,7 +15,7 @@ import {
   PUploadImage,
   PUploadImageError,
   RToField,
-	RToFieldNeverError,
+  RToFieldNeverError,
 } from '../src/type';
 
 const getAuthState: GetAuthState;
@@ -25,19 +26,19 @@ const spec: Spec = {};
 
 const rToField: RToField = ({ context, fieldSpec }) => {
   if (fieldSpec._type === 'Image') {
-    return cToImageField({ context, fieldSpec, getAuthState, pUploadImage });
+    return rToImageField({ context, fieldSpec });
   }
   if (fieldSpec._type === 'String') {
-    return cToStringField({ context, fieldSpec });
+    return rToStringField({ context, fieldSpec });
   }
   if (fieldSpec._type === 'Ref') {
-    return cToRefField({ context, fieldSpec, getAuthState, rToDoc });
+    return rToRefField({ context, fieldSpec, rToDoc });
   }
   if (fieldSpec._type === 'Count') {
-    return cToCountField({ context, fieldSpec });
+    return rToCountField({ context, fieldSpec });
   }
   if (fieldSpec._type === 'CreationTime') {
-    return cToCreationTimeField({ context, fieldSpec });
+    return rToCreationTimeField({ context, fieldSpec });
   }
   return Left(RToFieldNeverError(fieldSpec));
 };

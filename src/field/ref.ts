@@ -1,5 +1,15 @@
 import { isImageFieldValue, RefField, RefFieldSpec } from 'kira-core';
-import { Either, eitherFold, Left, Option, optionFold, optionMapSome, Right, Some } from 'trimop';
+import {
+  Either,
+  eitherFold,
+  eitherMapRight,
+  Left,
+  Option,
+  optionFold,
+  optionMapSome,
+  Right,
+  Some,
+} from 'trimop';
 
 import {
   CField,
@@ -8,10 +18,13 @@ import {
   CToFieldRToDocError,
   CToFieldUserNotSignedInError,
   GetAuthState,
-  InvalidCreationFieldTypeError,
+  InvalidTypeCToFieldError,
+  InvalidTypeRToDocError,
   RefRField,
   RField,
   RToDoc,
+  RToDocError,
+  RToFieldContext,
 } from '../type';
 
 function isRefRField(field: RField | CField | undefined): field is RefRField {
@@ -46,10 +59,10 @@ export async function cToRefField({
     field,
     async () =>
       Left(
-        InvalidCreationFieldTypeError({
+        InvalidTypeCToFieldError({
           col,
+          field,
           fieldName,
-          givenFieldValue: field,
         })
       ),
     async (rDoc) => {
@@ -90,12 +103,45 @@ export async function cToRefField({
               )
           )
         : Left(
-            InvalidCreationFieldTypeError({
+            InvalidTypeCToFieldError({
               col,
+              field: rDoc,
               fieldName,
-              givenFieldValue: rDoc,
             })
           );
     }
+  );
+}
+
+export function rToRefField({
+  context: { fieldName, field, col },
+  rToDoc,
+}: {
+  readonly context: RToFieldContext;
+  readonly fieldSpec: RefFieldSpec;
+  readonly rToDoc: RToDoc;
+}): Either<RToDocError, Option<RefField>> {
+  return optionFold(
+    field,
+    () =>
+      Left(
+        InvalidTypeRToDocError({
+          col,
+          field,
+          fieldName,
+        })
+      ),
+    (field) =>
+      isRefRField(field)
+        ? eitherMapRight(rToDoc(col, field), (doc) =>
+            Right(optionMapSome(doc, (doc) => Some(RefField({ doc, id: field._id }))))
+          )
+        : Left(
+            InvalidTypeRToDocError({
+              col,
+              field,
+              fieldName,
+            })
+          )
   );
 }

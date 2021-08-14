@@ -1,16 +1,4 @@
-import {
-  CountFieldSpec,
-  CreationTimeFieldSpec,
-  Doc,
-  DocKey,
-  DocSnapshot,
-  Field,
-  FieldSpec,
-  ImageFieldSpec,
-  RefFieldSpec,
-  Spec,
-  StringFieldSpec,
-} from 'kira-core';
+import { Doc, DocKey, DocSnapshot, Field, FieldSpec, Spec } from 'kira-core';
 import { Dict, Either, Left, Option } from 'trimop';
 
 /**
@@ -210,15 +198,36 @@ export type RToDocError = { readonly _errorType: 'RToDocError' };
 /**
  *
  */
+export type InvalidTypeRToDocError = {
+  readonly _errorType: 'RToDocError';
+  readonly _errorType2: 'InvalidTypeRToDocError';
+  readonly col: string;
+  readonly field: unknown;
+  readonly fieldName: string;
+};
+
+export function InvalidTypeRToDocError(
+  p: Omit<InvalidTypeRToDocError, '_errorType2' | '_errorType'>
+): InvalidTypeRToDocError {
+  return {
+    ...p,
+    _errorType: 'RToDocError',
+    _errorType2: 'InvalidTypeRToDocError',
+  };
+}
+
+/**
+ *
+ */
 export type RToFieldNeverError = {
-  readonly _errorType: 'RToFieldError';
+  readonly _errorType: 'RToDocError';
   readonly _errorType2: 'NeverError';
   readonly never: never;
 };
 
 export function RToFieldNeverError(never: never): RToFieldNeverError {
   return {
-    _errorType: 'RToFieldError',
+    _errorType: 'RToDocError',
     _errorType2: 'NeverError',
     never,
   };
@@ -320,16 +329,6 @@ export type CDoc = Dict<CField>;
 /**
  *
  */
-export type CFieldSpec =
-  | ImageFieldSpec
-  | StringFieldSpec
-  | RefFieldSpec
-  | CountFieldSpec
-  | CreationTimeFieldSpec;
-
-/**
- *
- */
 export type CToFieldUploadImageError<PUIE extends PUploadImageError> = {
   readonly _errorType: 'CToFieldError';
   readonly _errorType2: 'UploadImageError';
@@ -419,27 +418,27 @@ export type CToFieldError = { readonly _errorType: 'CToFieldError' };
  */
 export type CToField<E extends CToFieldError = CToFieldError> = (param: {
   readonly context: CToFieldContext;
-  readonly fieldSpec: CFieldSpec;
+  readonly fieldSpec: FieldSpec;
 }) => Promise<Either<E, Option<Field>>>;
 
 /**
  * InvalidCreationFieldTypeError
  */
-export type InvalidCreationFieldTypeError = {
+export type InvalidTypeCToFieldError = {
   readonly _errorType: 'CToFieldError';
-  readonly _state: 'InvalidCreationFieldTypeError';
+  readonly _errorType2: 'InvalidTypeCToFieldError';
   readonly col: string;
+  readonly field: unknown;
   readonly fieldName: string;
-  readonly givenFieldValue: unknown;
 };
 
-export function InvalidCreationFieldTypeError(
-  p: Omit<InvalidCreationFieldTypeError, '_state' | '_errorType'>
-): InvalidCreationFieldTypeError {
+export function InvalidTypeCToFieldError(
+  p: Omit<InvalidTypeCToFieldError, '_errorType2' | '_errorType'>
+): InvalidTypeCToFieldError {
   return {
     ...p,
     _errorType: 'CToFieldError',
-    _state: 'InvalidCreationFieldTypeError',
+    _errorType2: 'InvalidTypeCToFieldError',
   };
 }
 
