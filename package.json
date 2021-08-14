@@ -1,8 +1,8 @@
 {
-  "name": "kira-nosql",
-  "version": "0.1.28",
-  "description": "NoSQL utils for Kira",
-  "repository": "git@github.com:aabccd021/kira-nosql.git",
+  "name": "kira-client",
+  "version": "0.1.18",
+  "description": "Kira Client for Javascript",
+  "repository": "git@github.com:aabccd021/kira-client-js.git",
   "author": "aabccd021 <aabccd021@gmail.com>",
   "license": "MIT",
   "files": [
@@ -22,7 +22,7 @@
     "test": "jest --coverage --verbose",
     "latest": "yarn upgrade-interactive --latest",
     "please": "yarn tsc --noEmit && yarn lint --fix && yarn test ",
-    "pull-request": "git pull origin main --no-edit && npm version patch && git push && yarn open-cli https://github.com/aabccd021/kira-nosql/compare/main...$(git branch --show-current)"
+    "pull-request": "git pull origin main --no-edit && npm version patch && git push && yarn open-cli https://github.com/aabccd021/kira-client-js/compare/main...$(git branch --show-current)"
   },
   "dependencies": {
     "kira-core": "^0.3.32",

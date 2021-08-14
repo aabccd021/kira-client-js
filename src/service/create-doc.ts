@@ -22,7 +22,7 @@ import {
   PSetDocError,
   ReadyDocState,
   SetDocState,
-  UnknownCollectionNameFailure,
+  UnknownCollectionNameError,
 } from '../type';
 
 export function buildCreateDoc<
@@ -48,7 +48,7 @@ export function buildCreateDoc<
   return ({ cDoc, col, id: givenId }) =>
     optionFold(
       optionFromNullable(spec[col]),
-      () => Promise.resolve(Left(UnknownCollectionNameFailure({ col }))),
+      () => Promise.resolve(Left(UnknownCollectionNameError({ col }))),
       (colSpec) =>
         optionFold(
           givenId,
@@ -64,10 +64,10 @@ export function buildCreateDoc<
                   cToField({
                     context: {
                       col,
-                      field: optionFromNullable<CField>(cDoc[fieldName]),
                       fieldName,
                       id,
                     },
+                    field: optionFromNullable<CField>(cDoc[fieldName]),
                     fieldSpec,
                   }).then((field) => ({ field, fieldName }))
                 )
@@ -77,10 +77,15 @@ export function buildCreateDoc<
                     (acc, { fieldName, field }) =>
                       eitherMapRight(acc, (acc) =>
                         eitherMapRight(field, (field) =>
-                          Right({
-                            ...acc,
-                            [fieldName]: field,
-                          })
+                          optionFold(
+                            field,
+                            () => Right(acc),
+                            (field) =>
+                              Right({
+                                ...acc,
+                                [fieldName]: field,
+                              })
+                          )
                         )
                       ),
                     Right({})

@@ -251,7 +251,15 @@ export type CFieldSpec =
  */
 export type CToFieldContext = {
   readonly col: string;
-  readonly field: Option<CField>;
+  readonly fieldName: string;
+  readonly id: string;
+};
+
+/**
+ *
+ */
+export type CToFieldContext2 = {
+  readonly col: string;
   readonly fieldName: string;
   readonly id: string;
 };
@@ -264,10 +272,70 @@ export type CToFieldError = { readonly _errorType: 'CToFieldError' };
 /**
  *
  */
-export type CToField<E extends CToFieldError> = (param: {
+export type CToFieldUploadImageError<PUIE extends PUploadImageError> = {
+  readonly _errorType: 'CToFieldError';
+  readonly _errorType2: 'UploadImageError';
+  readonly uploadImageError: PUIE;
+};
+
+export function CToFieldUploadImageError<PUIE extends PUploadImageError>(
+  providerError: PUIE
+): CToFieldUploadImageError<PUIE> {
+  return {
+    _errorType: 'CToFieldError',
+    _errorType2: 'UploadImageError',
+    uploadImageError: providerError,
+  };
+}
+
+/**
+ *
+ */
+export type CToFieldUserNotSignedInError = {
+  readonly _errorType: 'CToFieldError';
+  readonly _errorType2: 'UserNotSignedInError';
+  readonly signInRequired: string;
+};
+
+export function CToFieldUserNotSignedInError(
+  p: Omit<CToFieldUserNotSignedInError, '_errorType' | '_errorType2'>
+): CToFieldUserNotSignedInError {
+  return {
+    ...p,
+    _errorType: 'CToFieldError',
+    _errorType2: 'UserNotSignedInError',
+  };
+}
+
+/**
+ *
+ */
+export type CToField<E extends CToFieldError = CToFieldError> = (param: {
   readonly context: CToFieldContext;
+  readonly field: Option<CField>;
   readonly fieldSpec: CFieldSpec;
-}) => Promise<Either<E, Field>>;
+}) => Promise<Either<E, Option<Field>>>;
+
+/**
+ * InvalidCreationFieldTypeError
+ */
+export type InvalidCreationFieldTypeError = {
+  readonly _errorType: 'CToFieldError';
+  readonly _state: 'InvalidCreationFieldTypeError';
+  readonly col: string;
+  readonly fieldName: string;
+  readonly givenFieldValue: unknown;
+};
+
+export function InvalidCreationFieldTypeError(
+  p: Omit<InvalidCreationFieldTypeError, '_state' | '_errorType'>
+): InvalidCreationFieldTypeError {
+  return {
+    ...p,
+    _errorType: 'CToFieldError',
+    _state: 'InvalidCreationFieldTypeError',
+  };
+}
 
 /**
  *
@@ -371,16 +439,16 @@ export type DocState<
 );
 
 /**
- * UnknownCollectionNameFailure
+ * UnknownCollectionNameError
  */
-export function UnknownCollectionNameFailure(
-  value: Omit<UnknownCollectionNameFailure, '_errorType'>
-): UnknownCollectionNameFailure {
-  return { _errorType: 'UnknownCollectionNameFailure', ...value };
+export function UnknownCollectionNameError(
+  value: Omit<UnknownCollectionNameError, '_errorType'>
+): UnknownCollectionNameError {
+  return { _errorType: 'UnknownCollectionNameError', ...value };
 }
 
-export type UnknownCollectionNameFailure = {
-  readonly _errorType: 'UnknownCollectionNameFailure';
+export type UnknownCollectionNameError = {
+  readonly _errorType: 'UnknownCollectionNameError';
   readonly col: string;
 };
 
@@ -391,7 +459,7 @@ export type CreateDocError<
   CFTE extends CToFieldError,
   PGNDI extends PGetNewDocIdError,
   PSDE extends PSetDocError
-> = UnknownCollectionNameFailure | CFTE | PGNDI | PSDE;
+> = UnknownCollectionNameError | CFTE | PGNDI | PSDE;
 
 /**
  *
@@ -426,6 +494,99 @@ export type SetDocState<
 /**
  *
  */
-export type InitialFetchDoc<PRDE extends PReadDocError> = (
+export type InitialFetchDoc<PRDE extends PReadDocError = PReadDocError> = (
   key: DocKey
 ) => Promise<Either<unknown, DocState<PRDE>>>;
+
+/**
+ *
+ */
+export type State<T> = {
+  readonly effectOnInit: () => Option<Unsubscribe>;
+  readonly initialState: T;
+  readonly subscribe: (listen: Listen<T>) => Unsubscribe;
+};
+
+/**
+ *
+ */
+export type AuthStateError = { readonly _errorType: 'AuthStateError' };
+
+/**
+ *
+ */
+export type InitializingAuthState = {
+  readonly state: 'initializing';
+};
+
+export function InitializingAuthState(): InitializingAuthState {
+  return { state: 'initializing' };
+}
+
+/**
+ * SignedIn
+ */
+export type SignedInAuthState<E extends AuthStateError, URD extends RDoc> = {
+  readonly error?: Left<E>;
+  readonly signOut: () => void;
+  readonly state: 'signedIn';
+  readonly user: URD;
+  readonly userId: string;
+};
+
+export function SignedInAuthState<E extends AuthStateError, URD extends RDoc>(
+  p: Omit<SignedInAuthState<E, URD>, 'state'>
+): SignedInAuthState<E, URD> {
+  return { ...p, state: 'signedIn' };
+}
+
+/**
+ *
+ */
+export type LoadingUserDataAuthState = {
+  readonly signOut: () => void;
+  readonly state: 'loadingUserData';
+  readonly userId: string;
+};
+
+export function LoadingUserDataAuthState(
+  p: Omit<LoadingUserDataAuthState, 'state'>
+): LoadingUserDataAuthState {
+  return { ...p, state: 'loadingUserData' };
+}
+
+/**
+ *
+ */
+export type SignedOutAuthState<E extends AuthStateError, SIO> = {
+  readonly error?: Left<E>;
+  readonly signIn: (option: SIO) => void;
+  readonly state: 'signedOut';
+};
+
+export function SignedOutAuthState<E extends AuthStateError, SIO>(
+  p: Omit<SignedOutAuthState<E, SIO>, 'state'>
+): SignedOutAuthState<E, SIO> {
+  return {
+    ...p,
+    state: 'signedOut',
+  };
+}
+
+/**
+ *
+ */
+export type AuthState<
+  ASE extends AuthStateError = AuthStateError,
+  SIO = unknown,
+  URD extends RDoc = RDoc
+> =
+  | InitializingAuthState
+  | SignedOutAuthState<ASE, SIO>
+  | LoadingUserDataAuthState
+  | SignedInAuthState<ASE, URD>;
+
+/**
+ *
+ */
+export type GetAuthState = () => AuthState;
