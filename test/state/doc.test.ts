@@ -1,30 +1,42 @@
 /* eslint-disable functional/no-let */
-import { None, Option, Right } from 'trimop';
+import { None, Right } from 'trimop';
 
-import { DocState } from '../../src';
+import { DocState, InitializingDocState, NotExistsDocState } from '../../src';
 import { makeDocState, pReadDoc } from '../generated';
+
+function sleep(milli: number): Promise<unknown> {
+  return new Promise((res) => setTimeout(res, milli));
+}
 
 describe('DocState', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it('is cool', () => {
+  it('is cool', async () => {
     pReadDoc.mockImplementation(async () => Right({ state: 'notExists' }));
-    let state: Option<DocState> = None();
+    let state: DocState | undefined;
     const mockedDocListen = jest
-      .fn<void, [Option<DocState>]>()
+      .fn<void, [DocState]>()
       .mockImplementation((docState) => (state = docState));
     const mockedEffect = jest.fn();
     const docState = makeDocState({ col: 'meme', id: 'meme1' });
     const unsubscribe = docState.subscribe(mockedDocListen);
-    expect(state).toEqual(None());
+    expect(state).toStrictEqual(InitializingDocState());
     const unsubscribeEffect = docState.effectOnInit();
-    expect(mockedDocListen).toHaveBeenCalledTimes(1);
-    expect(mockedDocListen).toHaveBeenCalledWith(None());
+
+    await sleep(100);
+    expect(mockedDocListen).toHaveBeenCalledTimes(2);
+    expect(mockedDocListen).toHaveBeenNthCalledWith(1, InitializingDocState());
+    expect(mockedDocListen).toHaveBeenNthCalledWith(
+      2,
+      NotExistsDocState({ create: expect.any(Function) })
+    );
     expect(mockedEffect).toHaveBeenCalledTimes(0);
     expect(unsubscribeEffect).toStrictEqual(None());
-    expect(state).toEqual(None());
+    console.log('z');
+    expect(state?.state).toStrictEqual('NotExists');
+    console.log('p');
 
     expect(pReadDoc).toHaveBeenCalledTimes(1);
 

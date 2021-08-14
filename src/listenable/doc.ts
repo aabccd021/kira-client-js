@@ -55,7 +55,7 @@ function serializeDocKey({ col, id }: DocKey): string {
  * @returns
  */
 function _subscribeToDocState(key: DocKey, newListen: Listen<DocState>): Unsubscribe {
-  return subscribeToRecord(dbController, serializeDocKey(key), newListen);
+  return subscribeToRecord<DocState>(dbController, serializeDocKey(key), newListen);
 }
 
 /**
@@ -74,7 +74,7 @@ function _getDocState(key: DocKey): Option<DocState> {
  * @returns
  */
 function _setDocState(key: DocKey, newDocState: DocState): undefined {
-  return setRecord(dbController, serializeDocKey(key), Some(newDocState));
+  return setRecord<DocState>(dbController, serializeDocKey(key), newDocState);
 }
 
 /**

@@ -1,4 +1,12 @@
-import { None, Option, optionFold, optionFromNullable, Some, StateController } from 'trimop';
+import {
+  None,
+  Option,
+  optionFold,
+  optionFromNullable,
+  optionMapSome,
+  Some,
+  StateController,
+} from 'trimop';
 
 import { DB, Listen, Listenable, Unsubscribe } from './type';
 
@@ -22,7 +30,10 @@ export function deleteRecord(dbController: StateController<DB>, key: string): un
 }
 
 export function getRecord<T>(db: StateController<DB>, key: string): Option<T> {
-  return optionFromNullable(db.get()[key]) as Option<T>;
+  return optionMapSome(
+    optionFromNullable(db.get()[key] as Listenable<T> | undefined),
+    (listenable) => listenable.state
+  );
 }
 
 export function setRecord<T>(

@@ -609,7 +609,7 @@ export type InitialFetchDoc<PRDE extends PReadDocError = PReadDocError> = (
 export type State<T> = {
   readonly effectOnInit: () => Option<Unsubscribe>;
   readonly initialState: T;
-  readonly subscribe: (listen: Listen<T>) => Unsubscribe;
+  readonly subscribe: (listen: (t: T) => void) => Unsubscribe;
 };
 
 /**

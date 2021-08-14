@@ -31,7 +31,7 @@ export function buildInitialFetchDoc<PRDE extends PReadDocError>(args: {
     optionFold<Promise<Either<PRDE, DocState<PRDE>>>, DocState>(
       getDocState(key),
       async () => {
-        console.log('empty', key);
+        console.log('empta', key);
         const newDocState = eitherFold<Either<PRDE, DocState<PRDE>>, PRDE, PReadDocResult>(
           await pReadDoc(key),
           (left) => {
@@ -75,9 +75,9 @@ export function buildInitialFetchDoc<PRDE extends PReadDocError>(args: {
         console.log('hmm', key);
         return newDocState;
       },
-      (docState) => {
-        console.log('empty', key);
-        return Promise.resolve(Right(docState) as Either<PRDE, DocState<PRDE>>);
+      async (docState) => {
+        console.log('ada', { docState, key });
+        return Right(docState) as Either<PRDE, DocState<PRDE>>;
       }
     );
 }
