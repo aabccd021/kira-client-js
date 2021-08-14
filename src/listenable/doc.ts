@@ -2,10 +2,10 @@ import { applyDocWrite, DocKey, DocSnapshot, Spec } from 'kira-core';
 import {
   ActionTrigger,
   BuildDraft,
+  ColTrigger,
   DocChange,
   getTransactionCommit,
   getTrigger,
-  Trigger,
   TriggerSnapshot,
 } from 'kira-nosql';
 import {
@@ -140,17 +140,21 @@ async function runTrigger<S extends TriggerSnapshot>({
  * @param param0
  * @returns
  */
-function getCachedTrigger({
+function getColTrigger({
   spec,
   buildDraft,
+  col,
 }: {
   readonly buildDraft: BuildDraft;
+  readonly col: string;
   readonly spec: Spec;
-}): Trigger {
-  return getCached({
-    builder: () => getTrigger({ buildDraft, spec }),
-    key: 'trigger',
-  });
+}): Option<ColTrigger> {
+  return optionFromNullable(
+    getCached({
+      builder: () => getTrigger({ buildDraft, spec }),
+      key: 'trigger',
+    })?.[col]
+  );
 }
 
 /**
@@ -173,39 +177,37 @@ export function buildSetDocState({
     const oldState = _getDocState(key);
     _setDocState(key, newDocState);
     if (newDocState.state === 'Ready') {
-      optionMapSome(
-        optionFromNullable(getCachedTrigger({ buildDraft, spec })?.[key.col]),
-        (colTrigger) =>
-          optionMapSome(oldState, (oldState) =>
-            oldState.state === 'Ready'
-              ? optionMapSome(colTrigger.onUpdate, (onColDeleteTrigger) =>
-                  Some(
-                    runTrigger<DocChange>({
-                      actionTrigger: onColDeleteTrigger,
-                      docToR,
-                      rToDoc,
-                      snapshot: {
-                        after: rToDoc(newDocState.data),
-                        before: rToDoc(oldState.data),
-                        id: newDocState.id,
-                      },
-                    })
-                  )
+      optionMapSome(getColTrigger({ buildDraft, col: key.col, spec }), (colTrigger) =>
+        optionMapSome(oldState, (oldState) =>
+          oldState.state === 'Ready'
+            ? optionMapSome(colTrigger.onUpdate, (onColDeleteTrigger) =>
+                Some(
+                  runTrigger<DocChange>({
+                    actionTrigger: onColDeleteTrigger,
+                    docToR,
+                    rToDoc,
+                    snapshot: {
+                      after: rToDoc(newDocState.data),
+                      before: rToDoc(oldState.data),
+                      id: newDocState.id,
+                    },
+                  })
                 )
-              : optionMapSome(colTrigger.onCreate, (onColCreateTrigger) =>
-                  Some(
-                    runTrigger<DocSnapshot>({
-                      actionTrigger: onColCreateTrigger,
-                      docToR,
-                      rToDoc,
-                      snapshot: {
-                        doc: rToDoc(newDocState.data),
-                        id: newDocState.id,
-                      },
-                    })
-                  )
+              )
+            : optionMapSome(colTrigger.onCreate, (onColCreateTrigger) =>
+                Some(
+                  runTrigger<DocSnapshot>({
+                    actionTrigger: onColCreateTrigger,
+                    docToR,
+                    rToDoc,
+                    snapshot: {
+                      doc: rToDoc(newDocState.data),
+                      id: newDocState.id,
+                    },
+                  })
                 )
-          )
+              )
+        )
       );
     }
   };
@@ -232,22 +234,20 @@ export function deleteDocState({
   _deleteDocState(key);
   optionMapSome(docState, (docState) => {
     if (docState.state === 'Ready') {
-      optionMapSome(
-        optionFromNullable(getCachedTrigger({ buildDraft, spec })?.[key.col]),
-        (colTrigger) =>
-          optionMapSome(colTrigger.onDelete, (onColDeleteTrigger) =>
-            Some(
-              runTrigger<DocSnapshot>({
-                actionTrigger: onColDeleteTrigger,
-                docToR,
-                rToDoc,
-                snapshot: {
-                  doc: rToDoc(docState.data),
-                  id: docState.id,
-                },
-              })
-            )
+      optionMapSome(getColTrigger({ buildDraft, col: key.col, spec }), (colTrigger) =>
+        optionMapSome(colTrigger.onDelete, (onColDeleteTrigger) =>
+          Some(
+            runTrigger<DocSnapshot>({
+              actionTrigger: onColDeleteTrigger,
+              docToR,
+              rToDoc,
+              snapshot: {
+                doc: rToDoc(docState.data),
+                id: docState.id,
+              },
+            })
           )
+        )
       );
     }
     return Some(undefined);
