@@ -22,19 +22,17 @@ import {
 export function buildInitialFetchDoc<PRDE extends PReadDocError>(args: {
   readonly createDoc: CreateDoc<CToFieldError, PSetDocError, PGetNewDocIdError>;
   readonly docToR: DocToR;
-  readonly provider: {
-    readonly readDoc: PReadDoc<PRDE>;
-  };
+  readonly pReadDoc: PReadDoc<PRDE>;
   readonly setDocState: SetDocState<PRDE>;
 }): InitialFetchDoc<PRDE> {
-  const { setDocState, provider, docToR, createDoc } = args;
+  const { setDocState, pReadDoc, docToR, createDoc } = args;
 
   return (key) =>
     optionFold<Promise<Either<PRDE, DocState<PRDE>>>, DocState>(
       getDocState(key),
       async () => {
         const newDocState = eitherFold<Either<PRDE, DocState<PRDE>>, PRDE, PReadDocResult>(
-          await provider.readDoc(key),
+          await pReadDoc(key),
           (left) => {
             setDocState(
               key,

@@ -13,27 +13,6 @@ import {
 
 import { RField, RToDoc, RToDocError, RToDocUnknownCollectionNameError, RToField } from './type';
 
-// Object.fromEntries(
-//   Object.entries(doc)
-//     .filter(([fieldName]) => fieldName[0] !== '_')
-//     .map(([fieldName, field]) => {
-//       if (typeof field === 'string') {
-//         return [fieldName, StringField(field)];
-//       }
-//       if (typeof field === 'number') {
-//         return [fieldName, NumberField(field)];
-//       }
-//       if (field instanceof Date) {
-//         return [fieldName, DateField(field)];
-//       }
-//       if (isImageFieldValue(field)) {
-//         return [fieldName, ImageField(field)];
-//       }
-//       // eslint-disable-next-line unused-imports/no-unused-vars
-//       return [fieldName, RefField({ doc: rToDoc(field), id: field._id })];
-//     })
-// );
-
 export function buildRToDoc(spec: Spec, rToField: RToField): RToDoc {
   return (col, rDoc) =>
     optionFold(

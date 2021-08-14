@@ -32,16 +32,15 @@ export function buildCreateDoc<
 >({
   cToField,
   docToR,
-  provider,
   spec,
   setDocState,
+  pGetNewDocId,
+  pSetDoc,
 }: {
   readonly cToField: CToField<CFTE>;
   readonly docToR: DocToR;
-  readonly provider: {
-    readonly getNewDocId: PGetNewDocId<PGNDI>;
-    readonly setDoc: PSetDoc<PSDE>;
-  };
+  readonly pGetNewDocId: PGetNewDocId<PGNDI>;
+  readonly pSetDoc: PSetDoc<PSDE>;
   readonly setDocState: SetDocState;
   readonly spec: Spec;
 }): CreateDoc<CFTE, PSDE, PGNDI> {
@@ -52,7 +51,7 @@ export function buildCreateDoc<
       (colSpec) =>
         optionFold(
           givenId,
-          () => provider.getNewDocId({ col }),
+          () => pGetNewDocId({ col }),
           (id) => Promise.resolve(Right(id))
         ).then((id) =>
           eitherFold(
@@ -98,7 +97,7 @@ export function buildCreateDoc<
                     (doc) => {
                       const key: DocKey = { col, id };
                       setDocState(key, ReadyDocState({ data: docToR(doc), id }));
-                      return provider.setDoc({ data: doc, key, spec }).then((result) =>
+                      return pSetDoc({ data: doc, key, spec }).then((result) =>
                         eitherFold(
                           result,
                           (left) => Left(left) as Either<PSDE, CreateDocResult>,

@@ -695,3 +695,8 @@ export type AuthState<
  *
  */
 export type GetAuthState = () => Option<AuthState>;
+
+/**
+ *
+ */
+export type MakeDocState = (key: DocKey) => State<DocState>;

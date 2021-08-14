@@ -1,20 +1,19 @@
 import { None } from 'trimop';
 
 import { subscribeToDocState } from '../listenable/doc';
-import { DocState, InitialFetchDoc, InitializingDocState, State } from '../type';
+import { InitialFetchDoc, InitializingDocState, MakeDocState } from '../type';
 
-export function makeDocState(
-  col: string,
-  id: string,
-  initialFetchDoc: InitialFetchDoc
-): State<DocState> {
-  const key = { col, id };
-  return {
+export function buildMakeDocState({
+  initialFetchDoc,
+}: {
+  readonly initialFetchDoc: InitialFetchDoc;
+}): MakeDocState {
+  return (key) => ({
     effectOnInit: () => {
       initialFetchDoc(key);
       return None();
     },
     initialState: InitializingDocState(),
     subscribe: (listen) => subscribeToDocState(key, listen),
-  };
+  });
 }

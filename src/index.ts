@@ -1,3 +1,4 @@
+export * from './doc-to-r';
 export * from './field/count';
 export * from './field/creation-time';
 export * from './field/image';

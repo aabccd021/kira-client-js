@@ -1,9 +1,14 @@
 /* eslint-disable no-use-before-define */
 import { Spec } from 'kira-core';
-import { Left } from 'trimop';
+import { buildCountDraft, buildCreationTimeDraft, BuildDraft, buildRefDraft } from 'kira-nosql';
+import { Left, None } from 'trimop';
 
 import {
+  buildCreateDoc,
+  buildInitialFetchDoc,
+  buildMakeDocState,
   buildRToDoc,
+  buildSetDocState,
   cToCountField,
   cToCreationTimeField,
   CToField,
@@ -11,7 +16,14 @@ import {
   cToImageField,
   cToRefField,
   cToStringField,
+  docToR,
   getAuthState,
+  PGetNewDocId,
+  PGetNewDocIdError,
+  PReadDoc,
+  PReadDocError,
+  PSetDoc,
+  PSetDocError,
   PUploadImage,
   PUploadImageError,
   rToCountField,
@@ -23,9 +35,93 @@ import {
   rToStringField,
 } from '../src';
 
+const pGetNewDocId: PGetNewDocId<PGetNewDocIdError> = jest.fn();
+const pSetDoc: PSetDoc<PSetDocError> = jest.fn();
 const pUploadImage: PUploadImage<PUploadImageError> = jest.fn();
+const pReadDoc: PReadDoc<PReadDocError> = jest.fn();
 
-const spec: Spec = {};
+const spec: Spec = {
+  independent: {
+    foo: { _type: 'String' },
+  },
+  meme: {
+    creationTime: {
+      _type: 'CreationTime',
+    },
+    memeImage: {
+      _type: 'Ref',
+      isOwner: false,
+      refedCol: 'memeImage',
+      syncedFields: {
+        image: true,
+      },
+      thisColRefers: [],
+    },
+    owner: {
+      _type: 'Ref',
+      isOwner: true,
+      refedCol: 'user',
+      syncedFields: {
+        displayName: true,
+        profilePicture: true,
+      },
+      thisColRefers: [],
+    },
+    text: {
+      _type: 'String',
+    },
+  },
+  memeImage: {
+    creationTime: {
+      _type: 'CreationTime',
+    },
+    image: {
+      _type: 'Image',
+    },
+    memeCreatedCount: {
+      _type: 'Count',
+      countedCol: 'meme',
+      groupByRef: 'memeImage',
+    },
+    owner: {
+      _type: 'Ref',
+      isOwner: true,
+      refedCol: 'user',
+      syncedFields: {
+        displayName: true,
+        profilePicture: true,
+      },
+      thisColRefers: [
+        {
+          colName: 'meme',
+          fields: [{ name: 'meme', syncedFields: {} }],
+          thisColRefers: [],
+        },
+      ],
+    },
+  },
+  user: {
+    displayName: {
+      _type: 'String',
+    },
+    joinedTime: {
+      _type: 'CreationTime',
+    },
+    memeCreatedCount: {
+      _type: 'Count',
+      countedCol: 'meme',
+      groupByRef: 'owner',
+    },
+    memeImageCreatedCount: {
+      _type: 'Count',
+      countedCol: 'memeImage',
+      groupByRef: 'owner',
+    },
+    profilePicture: {
+      _type: 'Image',
+    },
+  },
+};
 
 const rToField: RToField = ({ context, fieldSpec }) => {
   if (fieldSpec._type === 'Image') {
@@ -67,14 +163,42 @@ const cToField: CToField = async ({ context, fieldSpec }) => {
   return Left(CToFieldNeverError(fieldSpec));
 };
 
-// const docToR: DocToR;
-// const provider: {
-//   getNewDocId: PGetNewDocId<PGNDI>;
-//   setDoc: PSetDoc<PSDE>;
-// };
-// const setDocState: SetDocState;
-// const spec: Spec;
+const buildDraft: BuildDraft = ({ spec, context }) => {
+  if (spec._type === 'Count') {
+    return buildCountDraft({ context, spec });
+  }
+  if (spec._type === 'Ref') {
+    return buildRefDraft({ context, spec });
+  }
+  if (spec._type === 'CreationTime') {
+    return buildCreationTimeDraft({ context, spec });
+  }
+  return None();
+};
 
-// const createDoc = buildCreateDoc({});
+const setDocState = buildSetDocState({
+  buildDraft,
+  docToR,
+  rToDoc,
+  spec,
+});
 
-// const initialFetchDoc = buildInitialFetchDoc({});
+const createDoc = buildCreateDoc({
+  cToField,
+  docToR,
+  pGetNewDocId,
+  pSetDoc,
+  setDocState,
+  spec,
+});
+
+const initialFetchDoc = buildInitialFetchDoc({
+  createDoc,
+  docToR,
+  pReadDoc,
+  setDocState,
+});
+
+export const makeDocState = buildMakeDocState({
+  initialFetchDoc,
+});
