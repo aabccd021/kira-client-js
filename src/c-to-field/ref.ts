@@ -1,7 +1,6 @@
-import { RefField, RefFieldSpec } from 'kira-core';
+import { isImageFieldValue, RefField, RefFieldSpec } from 'kira-core';
 import { Either, Left, Option, Right, Some } from 'trimop';
 
-import { isRefRField } from '../is-ref-r-field';
 import {
   CField,
   CToFieldContext2,
@@ -9,8 +8,28 @@ import {
   CToFieldUserNotSignedInError,
   GetAuthState,
   InvalidCreationFieldTypeError,
+  RefRField,
+  RField,
   RToDoc,
 } from '../type';
+
+function isRefRField(field: RField | CField | undefined): field is RefRField {
+  if (field === undefined) {
+    return false;
+  }
+  return (
+    typeof (field as RefRField)._id === 'string' &&
+    Object.entries(field).every(
+      ([, fieldValue]) =>
+        typeof fieldValue === 'string' ||
+        typeof fieldValue === 'number' ||
+        fieldValue instanceof Date ||
+        (Array.isArray(fieldValue) && fieldValue.every((el) => typeof el === 'string')) ||
+        isImageFieldValue(fieldValue) ||
+        isRefRField(fieldValue)
+    )
+  );
+}
 
 export async function cToRefField({
   context: { fieldName, col },
