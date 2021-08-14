@@ -1,34 +1,66 @@
-import { Field } from 'kira-core';
-import { Either, None, Option, optionFold, Right } from 'trimop';
+import { Spec } from 'kira-core';
+import { Left } from 'trimop';
 
-import { cToImageField } from '../src/c-to-field/image';
-import { cToRefField } from '../src/c-to-field/ref';
-import { cToStringField } from '../src/c-to-field/string';
-import { CToField, CToFieldError, GetAuthState, PUploadImage, RToDoc } from '../src/type';
+import { cToCountField } from '../src/field/count';
+import { cToCreationTimeField } from '../src/field/creation-time';
+import { cToImageField } from '../src/field/image';
+import { cToRefField } from '../src/field/ref';
+import { cToStringField } from '../src/field/string';
+import { buildRToDoc, rToDoc } from '../src/r-to-doc';
+import {
+  CToField,
+  CToFieldNeverError,
+  GetAuthState,
+  PUploadImage,
+  PUploadImageError,
+  RToField,
+	RToFieldNeverError,
+} from '../src/type';
 
 const getAuthState: GetAuthState;
 
-const pUploadImage: PUploadImage;
+const pUploadImage: PUploadImage<PUploadImageError> = jest.fn();
 
-const rToDoc: RToDoc;
+const spec: Spec = {};
 
-const cToField: CToField = ({ context, fieldSpec, field }) => {
-  return optionFold(
-    field,
-    async () => Right(None()) as Either<CToFieldError, Option<Field>>,
-    async (field) => {
-      if (fieldSpec._type === 'Image') {
-        return cToImageField({ context, field, fieldSpec, getAuthState, pUploadImage });
-      }
-      if (fieldSpec._type === 'String') {
-        return cToStringField({ context, field, fieldSpec });
-      }
-      if (fieldSpec._type === 'Ref') {
-        return cToRefField({ context, field, fieldSpec, getAuthState, rToDoc });
-      }
-      return Right(None());
-    }
-  );
+const rToField: RToField = ({ context, fieldSpec }) => {
+  if (fieldSpec._type === 'Image') {
+    return cToImageField({ context, fieldSpec, getAuthState, pUploadImage });
+  }
+  if (fieldSpec._type === 'String') {
+    return cToStringField({ context, fieldSpec });
+  }
+  if (fieldSpec._type === 'Ref') {
+    return cToRefField({ context, fieldSpec, getAuthState, rToDoc });
+  }
+  if (fieldSpec._type === 'Count') {
+    return cToCountField({ context, fieldSpec });
+  }
+  if (fieldSpec._type === 'CreationTime') {
+    return cToCreationTimeField({ context, fieldSpec });
+  }
+  return Left(RToFieldNeverError(fieldSpec));
+};
+
+const rToDoc = buildRToDoc(spec, rToField);
+
+const cToField: CToField = async ({ context, fieldSpec }) => {
+  if (fieldSpec._type === 'Image') {
+    return cToImageField({ context, fieldSpec, getAuthState, pUploadImage });
+  }
+  if (fieldSpec._type === 'String') {
+    return cToStringField({ context, fieldSpec });
+  }
+  if (fieldSpec._type === 'Ref') {
+    return cToRefField({ context, fieldSpec, getAuthState, rToDoc });
+  }
+  if (fieldSpec._type === 'Count') {
+    return cToCountField({ context, fieldSpec });
+  }
+  if (fieldSpec._type === 'CreationTime') {
+    return cToCreationTimeField({ context, fieldSpec });
+  }
+  return Left(CToFieldNeverError(fieldSpec));
 };
 
 // const docToR: DocToR;

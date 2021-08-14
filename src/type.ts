@@ -5,6 +5,7 @@ import {
   DocKey,
   DocSnapshot,
   Field,
+  FieldSpec,
   ImageFieldSpec,
   RefFieldSpec,
   Spec,
@@ -194,7 +195,7 @@ export type RefRField = {
 /**
  *
  */
-export type RField = string | number | readonly string[] | Date | ImageRField | RefRField;
+export type RField = string | number | Date | ImageRField | RefRField;
 
 /**
  *
@@ -204,7 +205,87 @@ export type RDoc = Dict<RField>;
 /**
  *
  */
-export type RToDoc = (doc: RDoc) => Doc;
+export type RToDocError = { readonly _errorType: 'RToDocError' };
+
+/**
+ *
+ */
+export type RToFieldNeverError = {
+  readonly _errorType: 'RToFieldError';
+  readonly _errorType2: 'NeverError';
+  readonly never: never;
+};
+
+export function RToFieldNeverError(never: never): RToFieldNeverError {
+  return {
+    _errorType: 'RToFieldError',
+    _errorType2: 'NeverError',
+    never,
+  };
+}
+
+/**
+ *
+ */
+export function RToDocUnknownCollectionNameError(
+  value: Omit<RToDocUnknownCollectionNameError, '_errorType' | '_errorType2'>
+): RToDocUnknownCollectionNameError {
+  return {
+    _errorType: 'RToDocError',
+    _errorType2: 'UnknownCollectionNameError',
+    ...value,
+  };
+}
+
+export type RToDocUnknownCollectionNameError = {
+  readonly _errorType: 'RToDocError';
+  readonly _errorType2: 'UnknownCollectionNameError';
+  readonly col: string;
+};
+
+/**
+ *
+ */
+export function RToDocUnknownFieldNameError(
+  value: Omit<RToDocUnknownFieldNameError, '_errorType' | '_errorType2'>
+): RToDocUnknownFieldNameError {
+  return {
+    _errorType: 'RToDocError',
+    _errorType2: 'UnknownFieldNameError',
+    ...value,
+  };
+}
+
+export type RToDocUnknownFieldNameError = {
+  readonly _errorType: 'RToDocError';
+  readonly _errorType2: 'UnknownFieldNameError';
+  readonly fieldName: string;
+};
+
+/**
+ *
+ */
+export type RToFieldContext = {
+  readonly col: string;
+  readonly field: Option<RField>;
+  readonly fieldName: string;
+};
+
+/**
+ *
+ */
+export type RToField<E extends RToDocError = RToDocError> = (param: {
+  readonly context: RToFieldContext;
+  readonly fieldSpec: FieldSpec;
+}) => Either<E, Option<Field>>;
+
+/**
+ *
+ */
+export type RToDoc<E extends RToDocError = RToDocError> = (
+  col: string,
+  rDoc: RDoc
+) => Either<E, Option<Doc>>;
 
 /**
  *
@@ -249,29 +330,6 @@ export type CFieldSpec =
 /**
  *
  */
-export type CToFieldContext = {
-  readonly col: string;
-  readonly fieldName: string;
-  readonly id: string;
-};
-
-/**
- *
- */
-export type CToFieldContext2 = {
-  readonly col: string;
-  readonly fieldName: string;
-  readonly id: string;
-};
-
-/**
- *
- */
-export type CToFieldError = { readonly _errorType: 'CToFieldError' };
-
-/**
- *
- */
 export type CToFieldUploadImageError<PUIE extends PUploadImageError> = {
   readonly _errorType: 'CToFieldError';
   readonly _errorType2: 'UploadImageError';
@@ -310,9 +368,57 @@ export function CToFieldUserNotSignedInError(
 /**
  *
  */
+export type CToFieldRToDocError = {
+  readonly _errorType: 'CToFieldError';
+  readonly _errorType2: 'RToDocError';
+  readonly rToDocError: RToDocError;
+};
+
+export function CToFieldRToDocError(rToDocError: RToDocError): CToFieldRToDocError {
+  return {
+    _errorType: 'CToFieldError',
+    _errorType2: 'RToDocError',
+    rToDocError,
+  };
+}
+
+/**
+ *
+ */
+export type CToFieldNeverError = {
+  readonly _errorType: 'CToFieldError';
+  readonly _errorType2: 'NeverError';
+  readonly never: never;
+};
+
+export function CToFieldNeverError(never: never): CToFieldNeverError {
+  return {
+    _errorType: 'CToFieldError',
+    _errorType2: 'NeverError',
+    never,
+  };
+}
+
+/**
+ *
+ */
+export type CToFieldContext = {
+  readonly col: string;
+  readonly field: Option<CField>;
+  readonly fieldName: string;
+  readonly id: string;
+};
+
+/**
+ *
+ */
+export type CToFieldError = { readonly _errorType: 'CToFieldError' };
+
+/**
+ *
+ */
 export type CToField<E extends CToFieldError = CToFieldError> = (param: {
   readonly context: CToFieldContext;
-  readonly field: Option<CField>;
   readonly fieldSpec: CFieldSpec;
 }) => Promise<Either<E, Option<Field>>>;
 

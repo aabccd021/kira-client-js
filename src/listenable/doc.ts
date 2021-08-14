@@ -1,4 +1,4 @@
-import { applyDocWrite, DocKey, DocSnapshot, Spec } from 'kira-core';
+import { applyDocWrite, ApplyDocWriteError, Doc, DocKey, DocSnapshot, Spec } from 'kira-core';
 import {
   ActionTrigger,
   BuildDraft,
@@ -9,9 +9,12 @@ import {
   TriggerSnapshot,
 } from 'kira-nosql';
 import {
+  Either,
+  eitherFold,
   eitherMapRight,
   getStateController,
   isLeft,
+  Left,
   None,
   Option,
   optionFold,
@@ -84,12 +87,14 @@ function _deleteDocState(key: DocKey): undefined {
 }
 
 async function runTrigger<S extends TriggerSnapshot>({
+  col,
   snapshot,
   actionTrigger,
   docToR,
   rToDoc,
 }: {
   readonly actionTrigger: ActionTrigger<S> | undefined;
+  readonly col: string;
   readonly docToR: DocToR;
   readonly rToDoc: RToDoc;
   readonly snapshot: S;
@@ -105,7 +110,7 @@ async function runTrigger<S extends TriggerSnapshot>({
         optionFold(
           _getDocState(key),
           () => ({}),
-          (docState) => (docState.state === 'Ready' ? rToDoc(docState.data) : {})
+          (docState) => (docState.state === 'Ready' ? rToDoc(col, docState.data) : {})
         )
       ),
     snapshot,
@@ -122,14 +127,23 @@ async function runTrigger<S extends TriggerSnapshot>({
       optionFold(
         _getDocState(key),
         () => Right(undefined),
-        (docState) =>
-          eitherMapRight(
-            applyDocWrite({
-              doc: docState.state === 'Ready' ? Some(rToDoc(docState.data)) : None(),
-              writeDoc: docCommit.writeDoc,
-            }),
-            (newDoc) => Right(_setDocState(key, ReadyDocState({ data: docToR(newDoc), id: docId })))
-          )
+        (docState) => {
+          return eitherMapRight(
+            docState.state === 'Ready'
+              ? rToDoc(col, docState.data)
+              : (Right(None()) as Either<unknown, Option<Doc>>),
+            (doc) =>
+              eitherFold(
+                applyDocWrite({
+                  doc,
+                  writeDoc: docCommit.writeDoc,
+                }),
+                (left) => Left(left) as Either<ApplyDocWriteError, unknown>,
+                (newDoc) =>
+                  Right(_setDocState(key, ReadyDocState({ data: docToR(newDoc), id: docId })))
+              )
+          );
+        }
       );
     });
   });
@@ -177,37 +191,78 @@ export function buildSetDocState({
     const oldState = _getDocState(key);
     _setDocState(key, newDocState);
     if (newDocState.state === 'Ready') {
-      optionMapSome(getColTrigger({ buildDraft, col: key.col, spec }), (colTrigger) =>
-        optionMapSome(oldState, (oldState) =>
-          oldState.state === 'Ready'
-            ? optionMapSome(colTrigger.onUpdate, (onColDeleteTrigger) =>
-                Some(
-                  runTrigger<DocChange>({
-                    actionTrigger: onColDeleteTrigger,
-                    docToR,
-                    rToDoc,
-                    snapshot: {
-                      after: rToDoc(newDocState.data),
-                      before: rToDoc(oldState.data),
-                      id: newDocState.id,
-                    },
-                  })
-                )
-              )
-            : optionMapSome(colTrigger.onCreate, (onColCreateTrigger) =>
-                Some(
-                  runTrigger<DocSnapshot>({
-                    actionTrigger: onColCreateTrigger,
-                    docToR,
-                    rToDoc,
-                    snapshot: {
-                      doc: rToDoc(newDocState.data),
-                      id: newDocState.id,
-                    },
-                  })
-                )
-              )
-        )
+      optionFold(
+        getColTrigger({ buildDraft, col: key.col, spec }),
+        () => undefined,
+        (colTrigger) =>
+          optionFold(
+            oldState,
+            () => undefined,
+            (oldState) => {
+              oldState.state === 'Ready'
+                ? optionFold(
+                    colTrigger.onUpdate,
+                    () => undefined,
+                    (onColDeleteTrigger) =>
+                      eitherFold(
+                        rToDoc(key.col, newDocState.data),
+                        () => undefined,
+                        (after) =>
+                          optionFold(
+                            after,
+                            () => undefined,
+                            (after) =>
+                              eitherFold(
+                                rToDoc(key.col, oldState.data),
+                                () => undefined,
+                                (before) =>
+                                  optionFold(
+                                    before,
+                                    () => undefined,
+                                    (before) =>
+                                      runTrigger<DocChange>({
+                                        actionTrigger: onColDeleteTrigger,
+                                        col: key.col,
+                                        docToR,
+                                        rToDoc,
+                                        snapshot: {
+                                          after,
+                                          before,
+                                          id: newDocState.id,
+                                        },
+                                      })
+                                  )
+                              )
+                          )
+                      )
+                  )
+                : optionFold(
+                    colTrigger.onCreate,
+                    () => undefined,
+                    (onColCreateTrigger) =>
+                      eitherFold(
+                        rToDoc(key.col, newDocState.data),
+                        () => undefined,
+                        (doc) =>
+                          optionFold(
+                            doc,
+                            () => undefined,
+                            (doc) =>
+                              runTrigger<DocSnapshot>({
+                                actionTrigger: onColCreateTrigger,
+                                col: key.col,
+                                docToR,
+                                rToDoc,
+                                snapshot: {
+                                  doc,
+                                  id: newDocState.id,
+                                },
+                              })
+                          )
+                      )
+                  );
+            }
+          )
       );
     }
   };
@@ -237,15 +292,26 @@ export function deleteDocState({
       optionMapSome(getColTrigger({ buildDraft, col: key.col, spec }), (colTrigger) =>
         optionMapSome(colTrigger.onDelete, (onColDeleteTrigger) =>
           Some(
-            runTrigger<DocSnapshot>({
-              actionTrigger: onColDeleteTrigger,
-              docToR,
-              rToDoc,
-              snapshot: {
-                doc: rToDoc(docState.data),
-                id: docState.id,
-              },
-            })
+            eitherFold(
+              rToDoc(key.col, docState.data),
+              () => undefined,
+              (doc) =>
+                optionFold(
+                  doc,
+                  () => undefined,
+                  (doc) =>
+                    runTrigger<DocSnapshot>({
+                      actionTrigger: onColDeleteTrigger,
+                      col: key.col,
+                      docToR,
+                      rToDoc,
+                      snapshot: {
+                        doc,
+                        id: docState.id,
+                      },
+                    })
+                )
+            )
           )
         )
       );

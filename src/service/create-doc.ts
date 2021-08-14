@@ -60,14 +60,14 @@ export function buildCreateDoc<
             (left) => Promise.resolve(Left(left)),
             (id) =>
               Promise.all(
-                Object.entries(colSpec).map(async ([fieldName, fieldSpec]) =>
+                Object.entries(colSpec).map(([fieldName, fieldSpec]) =>
                   cToField({
                     context: {
                       col,
+                      field: optionFromNullable<CField>(cDoc[fieldName]),
                       fieldName,
                       id,
                     },
-                    field: optionFromNullable<CField>(cDoc[fieldName]),
                     fieldSpec,
                   }).then((field) => ({ field, fieldName }))
                 )
