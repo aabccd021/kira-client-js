@@ -67,24 +67,29 @@ export async function cToRefField({
       ),
     async (rDoc) => {
       if (fieldSpec.isOwner) {
-        const auth = getAuthState();
-        return auth.state === 'signedIn'
-          ? eitherFold(
-              rToDoc(col, auth.user),
-              (left) => Left(CToFieldRToDocError(left)) as Either<CToFieldError, Option<RefField>>,
-              (doc) =>
-                Right(
-                  optionMapSome(doc, (doc) =>
-                    Some(
-                      RefField({
-                        doc,
-                        id: auth.userId,
-                      })
+        return optionFold(
+          getAuthState(),
+          () => Left(CToFieldUserNotSignedInError({ signInRequired: `create ${col} doc` })),
+          (auth) =>
+            auth.state === 'signedIn'
+              ? eitherFold(
+                  rToDoc(col, auth.user),
+                  (left) =>
+                    Left(CToFieldRToDocError(left)) as Either<CToFieldError, Option<RefField>>,
+                  (doc) =>
+                    Right(
+                      optionMapSome(doc, (doc) =>
+                        Some(
+                          RefField({
+                            doc,
+                            id: auth.userId,
+                          })
+                        )
+                      )
                     )
-                  )
                 )
-            )
-          : Left(CToFieldUserNotSignedInError({ signInRequired: `create ${col} doc` }));
+              : Left(CToFieldUserNotSignedInError({ signInRequired: `create ${col} doc` }))
+        );
       }
       return isRefRField(rDoc)
         ? eitherFold(

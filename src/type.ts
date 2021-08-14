@@ -522,7 +522,7 @@ export type ReadyDocState<R extends RDoc> = {
 export function ReadyDocState<R extends RDoc>(
   p: Omit<ReadyDocState<R>, 'state'>
 ): ReadyDocState<R> {
-  return { ...p, state: 'Ready' } as ReadyDocState<R>;
+  return { ...p, state: 'Ready' };
 }
 
 /**
@@ -694,4 +694,4 @@ export type AuthState<
 /**
  *
  */
-export type GetAuthState = () => AuthState;
+export type GetAuthState = () => Option<AuthState>;

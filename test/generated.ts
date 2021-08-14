@@ -2,23 +2,26 @@
 import { Spec } from 'kira-core';
 import { Left } from 'trimop';
 
-import { cToCountField, rToCountField } from '../src/field/count';
-import { cToCreationTimeField, rToCreationTimeField } from '../src/field/creation-time';
-import { cToImageField, rToImageField } from '../src/field/image';
-import { cToRefField, rToRefField } from '../src/field/ref';
-import { cToStringField, rToStringField } from '../src/field/string';
-import { buildRToDoc } from '../src/r-to-doc';
 import {
+  buildRToDoc,
+  cToCountField,
+  cToCreationTimeField,
   CToField,
   CToFieldNeverError,
-  GetAuthState,
+  cToImageField,
+  cToRefField,
+  cToStringField,
+  getAuthState,
   PUploadImage,
   PUploadImageError,
+  rToCountField,
+  rToCreationTimeField,
   RToField,
   RToFieldNeverError,
-} from '../src/type';
-
-const getAuthState: GetAuthState;
+  rToImageField,
+  rToRefField,
+  rToStringField,
+} from '../src';
 
 const pUploadImage: PUploadImage<PUploadImageError> = jest.fn();
 

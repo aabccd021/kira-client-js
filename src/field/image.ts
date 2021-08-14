@@ -1,7 +1,8 @@
-import { CountFieldSpec, ImageField, ImageFieldSpec, isImageFieldValue } from 'kira-core';
+import { ImageField, ImageFieldSpec, isImageFieldValue } from 'kira-core';
 import { Either, eitherFold, Left, optionFold, Right, Some } from 'trimop';
 
 import {
+  AuthContext,
   CToFieldContext,
   CToFieldError,
   CToFieldUploadImageError,
@@ -40,13 +41,16 @@ export async function cToImageField<PUIE extends PUploadImageError>({
       }
 
       if (field instanceof File) {
-        const auth = getAuthState();
         return eitherFold(
           await pUploadImage({
-            auth:
-              auth.state === 'signedIn' || auth.state === 'loadingUserData'
-                ? { id: auth.userId, state: 'signedIn' }
-                : { state: 'signedOut' },
+            auth: optionFold(
+              getAuthState(),
+              () => ({ state: 'signedOut' } as AuthContext),
+              (auth) =>
+                auth.state === 'signedIn' || auth.state === 'loadingUserData'
+                  ? { id: auth.userId, state: 'signedIn' }
+                  : { state: 'signedOut' }
+            ),
             col,
             fieldName,
             file: field,
