@@ -4,12 +4,12 @@ import { Dict, Either, Left, Option } from 'trimop';
 /**
  *
  */
-export type Listen<T> = (value: Option<T>) => undefined;
+export type Listen<T> = (value: Option<T>) => void;
 
 /**
  *
  */
-export type Unsubscribe = () => undefined;
+export type Unsubscribe = () => void;
 
 /**
  *

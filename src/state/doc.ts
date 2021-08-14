@@ -10,6 +10,7 @@ export function buildMakeDocState({
 }): MakeDocState {
   return (key) => ({
     effectOnInit: () => {
+      console.log('aabccd');
       initialFetchDoc(key);
       return None();
     },

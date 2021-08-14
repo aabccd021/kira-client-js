@@ -1,3 +1,4 @@
+/* eslint-disable import/exports-last */
 /* eslint-disable no-use-before-define */
 import { Spec } from 'kira-core';
 import { buildCountDraft, buildCreationTimeDraft, BuildDraft, buildRefDraft } from 'kira-nosql';
@@ -35,10 +36,16 @@ import {
   rToStringField,
 } from '../src';
 
-const pGetNewDocId: PGetNewDocId<PGetNewDocIdError> = jest.fn();
-const pSetDoc: PSetDoc<PSetDocError> = jest.fn();
-const pUploadImage: PUploadImage<PUploadImageError> = jest.fn();
-const pReadDoc: PReadDoc<PReadDocError> = jest.fn();
+export const pGetNewDocId = jest.fn<
+  ReturnType<PGetNewDocId<PGetNewDocIdError>>,
+  Parameters<PGetNewDocId<PGetNewDocIdError>>
+>();
+export const pSetDoc: PSetDoc<PSetDocError> = jest.fn();
+export const pUploadImage: PUploadImage<PUploadImageError> = jest.fn();
+export const pReadDoc = jest.fn<
+  ReturnType<PReadDoc<PReadDocError>>,
+  Parameters<PReadDoc<PReadDocError>>
+>();
 
 const spec: Spec = {
   independent: {
