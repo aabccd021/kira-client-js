@@ -26,6 +26,7 @@ import {
 
 import { getCached } from '../cached';
 import { deleteRecord, getRecord, setRecord, subscribeToRecord } from '../kv';
+import { _, oMap } from '../trimop/pipe';
 import {
   DB,
   DocState,
@@ -287,6 +288,10 @@ export function deleteDocState({
 }): void {
   const docState = _getDocState(key);
   _deleteDocState(key);
+
+  // _(docState)
+  //   ._(oMap((docState) => (docState.state === 'Ready' ? true : false)))
+  //   .eval();
 
   optionMapSome(docState, (docState) => {
     if (docState.state === 'Ready') {

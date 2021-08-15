@@ -1,14 +1,5 @@
 import { isImageFieldValue, RefField, RefFieldSpec } from 'kira-core';
-import {
-  Either,
-  eitherMapRight,
-  Left,
-  Option,
-  optionFold,
-  optionMapSome,
-  Right,
-  Some,
-} from 'trimop';
+import { Either, Left, Option } from 'trimop';
 
 import { _, eMap, eMapLeft, leftTo, oMap, oToSome, Task } from '../trimop/pipe';
 import {
@@ -120,27 +111,26 @@ export function rToRefField({
   readonly fieldSpec: RefFieldSpec;
   readonly rToDoc: RToDoc;
 }): Either<RToDocError, Option<RefField>> {
-  return optionFold(
-    field,
-    () =>
-      Left(
-        InvalidTypeRToDocError({
-          col,
-          field,
-          fieldName,
-        })
-      ),
-    (field) =>
-      isRefRField(field)
-        ? eitherMapRight(rToDoc(col, field), (doc) =>
-            Right(optionMapSome(doc, (doc) => Some(RefField({ doc, id: field._id }))))
-          )
-        : Left(
-            InvalidTypeRToDocError({
-              col,
-              field,
-              fieldName,
-            })
-          )
-  );
+  return _(field)
+    ._(
+      oMap((field) =>
+        isRefRField(field)
+          ? _(rToDoc(col, field))
+              ._(
+                eMap((doc) =>
+                  _(doc)
+                    ._(oMap((doc) => RefField({ doc, id: field._id })))
+                    .eval()
+                )
+              )
+              .eval()
+          : _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left).eval()
+      )
+    )
+    ._(
+      oToSome<Either<RToDocError, Option<RefField>>>(() =>
+        _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left).eval()
+      )
+    )
+    .eval();
 }

@@ -1,7 +1,7 @@
 import { StringField, StringFieldSpec } from 'kira-core';
-import { Either, Left, optionFold, Right, Some } from 'trimop';
+import { Either, Left, Right, Some } from 'trimop';
 
-import { _, oMap, oToSome } from '../trimop/pipe';
+import { _, oMap, oToSome, toRightSome } from '../trimop/pipe';
 import {
   CToFieldContext,
   CToFieldError,
@@ -39,25 +39,18 @@ export function rToStringField({
   readonly context: RToFieldContext;
   readonly fieldSpec: StringFieldSpec;
 }): Either<RToDocError, Some<StringField>> {
-  return optionFold(
-    field,
-    () =>
-      Left(
-        InvalidTypeRToDocError({
-          col,
-          field,
-          fieldName,
-        })
-      ),
-    (field) =>
-      typeof field === 'string'
-        ? Right(Some(StringField(field)))
-        : Left(
-            InvalidTypeRToDocError({
-              col,
-              field,
-              fieldName,
-            })
-          )
-  );
+  return _(field)
+    ._(
+      oMap((field) =>
+        typeof field === 'string'
+          ? _(StringField(field))._(toRightSome).eval()
+          : _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left).eval()
+      )
+    )
+    ._(
+      oToSome<Either<RToDocError, Some<StringField>>>(() =>
+        _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left).eval()
+      )
+    )
+    .eval();
 }
