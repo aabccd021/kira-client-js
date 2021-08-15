@@ -1,5 +1,5 @@
 import { ImageField, ImageFieldSpec, isImageFieldValue } from 'kira-core';
-import { Either, Left, optionFold, Right, Some } from 'trimop';
+import { Either, Left, Some } from 'trimop';
 
 import {
   _,
@@ -10,6 +10,7 @@ import {
   oToSome,
   Task,
   tMap,
+  toRightSome,
   toTaskLeft,
   toTaskRightSome,
 } from '../trimop/pipe';
@@ -74,25 +75,18 @@ export function rToImageField({
   readonly context: RToFieldContext;
   readonly fieldSpec: ImageFieldSpec;
 }): Either<RToDocError, Some<ImageField>> {
-  return optionFold(
-    field,
-    () =>
-      Left(
-        InvalidTypeRToDocError({
-          col,
-          field,
-          fieldName,
-        })
-      ),
-    (field) =>
-      isImageFieldValue(field)
-        ? Right(Some(ImageField(field)))
-        : Left(
-            InvalidTypeRToDocError({
-              col,
-              field,
-              fieldName,
-            })
-          )
-  );
+  return _(field)
+    ._(
+      oMap((field) =>
+        isImageFieldValue(field)
+          ? _(ImageField(field))._(toRightSome).eval()
+          : _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left).eval()
+      )
+    )
+    ._(
+      oToSome<Either<RToDocError, Some<ImageField>>>(() =>
+        _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left).eval()
+      )
+    )
+    .eval();
 }

@@ -1,7 +1,7 @@
 import { CreationTimeFieldSpec, DateField } from 'kira-core';
-import { Either, Left, None, optionFold, Right, Some } from 'trimop';
+import { Either, Left, None, Right, Some } from 'trimop';
 
-import { _, oMap, oToSome } from '../trimop/pipe';
+import { _, oMap, oToSome, toRightSome } from '../trimop/pipe';
 import {
   CToFieldContext,
   CToFieldError,
@@ -29,27 +29,18 @@ export function rToCreationTimeField({
   readonly context: RToFieldContext;
   readonly fieldSpec: CreationTimeFieldSpec;
 }): Either<RToDocError, Some<DateField>> {
-  return optionFold(
-    field,
-    () =>
-      Left(
-        InvalidTypeRToDocError({
-          col,
-          field,
-          fieldName,
-          message: 'empty',
-        })
-      ),
-    (field) =>
-      field instanceof Date
-        ? Right(Some(DateField(field)))
-        : Left(
-            InvalidTypeRToDocError({
-              col,
-              field,
-              fieldName,
-              message: 'invalid',
-            })
-          )
-  );
+  return _(field)
+    ._(
+      oMap((field) =>
+        field instanceof Date
+          ? _(DateField(field))._(toRightSome).eval()
+          : _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left).eval()
+      )
+    )
+    ._(
+      oToSome<Either<RToDocError, Some<DateField>>>(() =>
+        _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left).eval()
+      )
+    )
+    .eval();
 }

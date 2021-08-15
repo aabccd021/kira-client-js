@@ -187,6 +187,10 @@ export function toTaskRightSome<T>(t: T): Task<Right<Some<T>>> {
   return _(t)._(Some)._(toTaskRight).eval();
 }
 
+export function toRightSome<T>(t: T): Right<Some<T>> {
+  return _(t)._(Some)._(Right).eval();
+}
+
 export function toTaskLeft<T>(t: T): Task<Left<T>> {
   return _(t)._(Left)._(Task).eval();
 }
