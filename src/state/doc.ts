@@ -10,7 +10,6 @@ export function buildMakeDocState({
 }): MakeDocState {
   return (key) => ({
     effectOnInit: () => {
-      console.log('aabccd');
       initialFetchDoc(key);
       return None();
     },
@@ -19,14 +18,8 @@ export function buildMakeDocState({
       subscribeToDocState(key, (docState) =>
         optionFold(
           docState,
-          () => {
-            console.log('sini');
-            listen(InitializingDocState());
-          },
-          (docState) => {
-            console.log('situ', { docState });
-            listen(docState);
-          }
+          () => listen(InitializingDocState()),
+          (docState) => listen(docState)
         )
       ),
   });

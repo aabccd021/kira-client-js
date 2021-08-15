@@ -1,83 +1,101 @@
-import { Either, eitherFold, isRight, Left, optionFold, Right, Some } from 'trimop';
+import { Spec } from 'kira-core';
+import { BuildDraft } from 'kira-nosql';
 
-import { getDocState } from '../listenable/doc';
+import { buildSetDocState, getDocState } from '../listenable/doc';
 import {
-  ContainsErrorDocState,
-  CreateDoc,
-  CreatingDocState,
-  CToFieldError,
-  DocState,
+  _,
+  doTaskEffect,
+  eMap,
+  eMapLeft,
+  eToRight,
+  leftTo,
+  oMap,
+  oToSome,
+  tMap,
+  toTask,
+} from '../trimop/pipe';
+import {
+  CToField,
   DocToR,
   InitialFetchDoc,
-  NotExistsDocState,
-  PGetNewDocIdError,
+  PGetNewDocId,
   PReadDoc,
+  PReadDocDocStateError,
   PReadDocError,
-  PReadDocResult,
-  PSetDocError,
+  PSetDoc,
   ReadyDocState,
-  SetDocState,
+  RToDoc,
 } from '../type';
+import { buildCreateContainsErrorDocState } from './set-contains-error-doc-state';
+import { buildCreateNotExistsDocState } from './set-not-exists-doc-state';
 
-export function buildInitialFetchDoc<PRDE extends PReadDocError>(args: {
-  readonly createDoc: CreateDoc<CToFieldError, PSetDocError, PGetNewDocIdError>;
+export function buildInitialFetchDoc<PRDE extends PReadDocError>({
+  buildDraft,
+  cToField,
+  docToR,
+  pGetNewDocId,
+  pReadDoc,
+  pSetDoc,
+  rToDoc,
+  spec,
+}: {
+  readonly buildDraft: BuildDraft;
+  readonly cToField: CToField;
   readonly docToR: DocToR;
+  readonly pGetNewDocId: PGetNewDocId;
   readonly pReadDoc: PReadDoc<PRDE>;
-  readonly setDocState: SetDocState<PRDE>;
-}): InitialFetchDoc<PRDE> {
-  const { setDocState, pReadDoc, docToR, createDoc } = args;
+  readonly pSetDoc: PSetDoc;
+  readonly rToDoc: RToDoc;
+  readonly spec: Spec;
+}): InitialFetchDoc {
+  const setDocState = buildSetDocState({ buildDraft, docToR, rToDoc, spec });
+  const createNotExistsDocState = buildCreateNotExistsDocState({
+    buildDraft,
+    cToField,
+    docToR,
+    pGetNewDocId,
+    pReadDoc,
+    pSetDoc,
+    rToDoc,
+    spec,
+  });
+
+  const createContainsErrorDocState = buildCreateContainsErrorDocState({
+    buildDraft,
+    cToField,
+    docToR,
+    pGetNewDocId,
+    pReadDoc,
+    pSetDoc,
+    rToDoc,
+    spec,
+  });
 
   return (key) =>
-    optionFold<Promise<Either<PRDE, DocState<PRDE>>>, DocState>(
-      getDocState(key),
-      async () => {
-        console.log('empta', key);
-        const newDocState = eitherFold<Either<PRDE, DocState<PRDE>>, PRDE, PReadDocResult>(
-          await pReadDoc(key),
-          (left) => {
-            console.log('left', key);
-            setDocState(
-              key,
-              ContainsErrorDocState({
-                error: Left(left),
-                revalidate: () => {
-                  const initialFetchDoc = buildInitialFetchDoc(args);
-                  initialFetchDoc(key);
-                },
-              })
-            );
-            return Left(left);
-          },
-          (remoteDoc) =>
-            Right(
-              remoteDoc.state === 'notExists'
-                ? NotExistsDocState({
-                    create: (cDoc) => {
-                      setDocState(key, CreatingDocState());
-                      createDoc({
-                        cDoc,
-                        col: key.col,
-                        id: Some(key.id),
-                      });
-                    },
-                  })
-                : ReadyDocState({
-                    data: docToR(remoteDoc.data),
-                    id: key.id,
-                  })
-            )
-        );
-        console.log(newDocState);
-        if (isRight(newDocState)) {
-          console.log('right', key);
-          setDocState(key, newDocState.right);
-        }
-        console.log('hmm', key);
-        return newDocState;
-      },
-      async (docState) => {
-        console.log('ada', { docState, key });
-        return Right(docState) as Either<PRDE, DocState<PRDE>>;
-      }
-    );
+    _(key)
+      ._(getDocState)
+      ._(oMap(toTask))
+      ._(
+        oToSome(
+          _(key)
+            ._(pReadDoc)
+            ._(
+              tMap((res) =>
+                _(res)
+                  ._(
+                    eMap((remoteDoc) =>
+                      remoteDoc.state === 'exists'
+                        ? ReadyDocState({ data: docToR(remoteDoc.data), id: key.id })
+                        : createNotExistsDocState(key)
+                    )
+                  )
+                  ._(eMapLeft(leftTo(PReadDocDocStateError)))
+                  ._(eToRight(createContainsErrorDocState(key)))
+                  .eval()
+              )
+            ).eval
+        )
+      )
+      ._(doTaskEffect((docState) => setDocState(key, docState)))
+      .eval();
 }

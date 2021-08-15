@@ -33,6 +33,7 @@ export async function cToImageField<PUIE extends PUploadImageError>({
           col,
           field,
           fieldName,
+          message: 'empty',
         })
       ),
     async (field) => {
@@ -70,6 +71,7 @@ export async function cToImageField<PUIE extends PUploadImageError>({
           col,
           field,
           fieldName,
+          message: 'wrong type',
         })
       );
     }

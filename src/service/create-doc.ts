@@ -1,4 +1,4 @@
-import { Doc, DocKey, Spec } from 'kira-core';
+import { Doc, Spec } from 'kira-core';
 import {
   Either,
   eitherFold,
@@ -15,13 +15,10 @@ import {
   CreateDocResult,
   CToField,
   CToFieldError,
-  DocToR,
   PGetNewDocId,
   PGetNewDocIdError,
   PSetDoc,
   PSetDocError,
-  ReadyDocState,
-  SetDocState,
   UnknownCollectionNameError,
 } from '../type';
 
@@ -31,17 +28,13 @@ export function buildCreateDoc<
   PGNDI extends PGetNewDocIdError
 >({
   cToField,
-  docToR,
   spec,
-  setDocState,
   pGetNewDocId,
   pSetDoc,
 }: {
   readonly cToField: CToField<CFTE>;
-  readonly docToR: DocToR;
   readonly pGetNewDocId: PGetNewDocId<PGNDI>;
   readonly pSetDoc: PSetDoc<PSDE>;
-  readonly setDocState: SetDocState;
   readonly spec: Spec;
 }): CreateDoc<CFTE, PSDE, PGNDI> {
   return ({ cDoc, col, id: givenId }) =>
@@ -93,18 +86,15 @@ export function buildCreateDoc<
                 .then((doc) =>
                   eitherFold(
                     doc,
-                    (left) => Promise.resolve(Left(left)),
-                    (doc) => {
-                      const key: DocKey = { col, id };
-                      setDocState(key, ReadyDocState({ data: docToR(doc), id }));
-                      return pSetDoc({ data: doc, key, spec }).then((result) =>
+                    async (left) => Left(left),
+                    (doc) =>
+                      pSetDoc({ doc, key: { col, id }, spec }).then((result) =>
                         eitherFold(
                           result,
                           (left) => Left(left) as Either<PSDE, CreateDocResult>,
                           () => Right({ doc, id })
                         )
-                      );
-                    }
+                      )
                   )
                 )
           )

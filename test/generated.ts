@@ -1,6 +1,6 @@
 /* eslint-disable import/exports-last */
 /* eslint-disable no-use-before-define */
-import { Spec } from 'kira-core';
+import { DocKey, Spec } from 'kira-core';
 import { buildCountDraft, buildCreationTimeDraft, BuildDraft, buildRefDraft } from 'kira-nosql';
 import { Left, None } from 'trimop';
 
@@ -10,6 +10,7 @@ import {
   buildMakeDocState,
   buildRToDoc,
   buildSetDocState,
+  ContainsErrorDocState,
   cToCountField,
   cToCreationTimeField,
   CToField,
@@ -17,8 +18,11 @@ import {
   cToImageField,
   cToRefField,
   cToStringField,
+  DocStateError,
   docToR,
   getAuthState,
+  ImageCField,
+  ImageRField,
   PGetNewDocId,
   PGetNewDocIdError,
   PReadDoc,
@@ -34,13 +38,19 @@ import {
   rToImageField,
   rToRefField,
   rToStringField,
+  StringCField,
 } from '../src';
 
 export const pGetNewDocId = jest.fn<
   ReturnType<PGetNewDocId<PGetNewDocIdError>>,
   Parameters<PGetNewDocId<PGetNewDocIdError>>
 >();
-export const pSetDoc: PSetDoc<PSetDocError> = jest.fn();
+
+export const pSetDoc = jest.fn<
+  ReturnType<PSetDoc<PSetDocError>>,
+  Parameters<PSetDoc<PSetDocError>>
+>();
+
 export const pUploadImage: PUploadImage<PUploadImageError> = jest.fn();
 export const pReadDoc = jest.fn<
   ReturnType<PReadDoc<PReadDocError>>,
@@ -209,3 +219,34 @@ const initialFetchDoc = buildInitialFetchDoc({
 export const makeDocState = buildMakeDocState({
   initialFetchDoc,
 });
+
+function z<T extends DocStateError>(key: DocKey, e: T): ContainsErrorDocState<T> {
+  return ContainsErrorDocState({
+    error: Left(e),
+    revalidate: () => initialFetchDoc(key),
+  });
+}
+
+export type MemeCDoc = {
+  memeImage: MemeImageDoc & { _id: string };
+  text: StringCField;
+};
+
+export type MemeImageDoc = {
+  creationTime: Date;
+  image: ImageRField;
+  memeCreatedCount: number;
+  owner: UserDoc & { _id: string };
+};
+
+export type MemeImageCDoc = {
+  image: ImageCField;
+};
+
+export type UserDoc = {
+  displayName: string;
+  joinedTime: Date;
+  memeCreatedCount: number;
+  memeImageCreatedCount: number;
+  profilePicture: ImageRField;
+};

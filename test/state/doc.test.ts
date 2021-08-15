@@ -1,8 +1,8 @@
 /* eslint-disable functional/no-let */
 import { None, Right } from 'trimop';
 
-import { DocState, InitializingDocState, NotExistsDocState } from '../../src';
-import { makeDocState, pReadDoc } from '../generated';
+import { CreatingDocState, DocState, InitializingDocState, NotExistsDocState } from '../../src';
+import { makeDocState, MemeImageCDoc, pReadDoc, pSetDoc } from '../generated';
 
 function sleep(milli: number): Promise<unknown> {
   return new Promise((res) => setTimeout(res, milli));
@@ -15,30 +15,33 @@ describe('DocState', () => {
 
   it('is cool', async () => {
     pReadDoc.mockImplementation(async () => Right({ state: 'notExists' }));
-    let state: DocState | undefined;
+    pSetDoc.mockImplementation(async () => Right({ state: 'notExists' }));
+    let memeImageState: DocState | undefined;
     const mockedDocListen = jest
       .fn<void, [DocState]>()
-      .mockImplementation((docState) => (state = docState));
-    const mockedEffect = jest.fn();
-    const docState = makeDocState({ col: 'meme', id: 'meme1' });
+      .mockImplementation((docState) => (memeImageState = docState));
+
+    const docState = makeDocState({ col: 'memeImage', id: 'memeImage1' });
     const unsubscribe = docState.subscribe(mockedDocListen);
-    expect(state).toStrictEqual(InitializingDocState());
+
+    expect(memeImageState).toStrictEqual(InitializingDocState());
+
     const unsubscribeEffect = docState.effectOnInit();
-
     await sleep(100);
-    expect(mockedDocListen).toHaveBeenCalledTimes(2);
-    expect(mockedDocListen).toHaveBeenNthCalledWith(1, InitializingDocState());
-    expect(mockedDocListen).toHaveBeenNthCalledWith(
-      2,
-      NotExistsDocState({ create: expect.any(Function) })
-    );
-    expect(mockedEffect).toHaveBeenCalledTimes(0);
-    expect(unsubscribeEffect).toStrictEqual(None());
-    console.log('z');
-    expect(state?.state).toStrictEqual('NotExists');
-    console.log('p');
 
+    expect(unsubscribeEffect).toStrictEqual(None());
+    expect(memeImageState).toStrictEqual(NotExistsDocState({ create: expect.any(Function) }));
     expect(pReadDoc).toHaveBeenCalledTimes(1);
+    expect(pSetDoc).toHaveBeenCalledTimes(0);
+
+    (memeImageState as NotExistsDocState<MemeImageCDoc>).create({
+      image: 'https://',
+    });
+    expect(memeImageState).toStrictEqual(CreatingDocState());
+    await sleep(500);
+    expect(pReadDoc).toHaveBeenCalledTimes(1);
+    expect(memeImageState).toStrictEqual(CreatingDocState());
+    expect(pSetDoc).toHaveBeenCalledTimes(1);
 
     unsubscribe();
   });

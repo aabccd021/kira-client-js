@@ -37,6 +37,7 @@ export function rToCreationTimeField({
           col,
           field,
           fieldName,
+          message: 'empty',
         })
       ),
     (field) =>
@@ -47,6 +48,7 @@ export function rToCreationTimeField({
               col,
               field,
               fieldName,
+              message: 'invalid',
             })
           )
   );

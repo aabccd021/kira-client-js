@@ -94,7 +94,10 @@ export async function cToRefField({
       return isRefRField(rDoc)
         ? eitherFold(
             rToDoc(col, rDoc),
-            (left) => Left(CToFieldRToDocError(left)) as Either<CToFieldError, Option<RefField>>,
+            (left) => {
+              console.log('bingo', { rDoc });
+              return Left(CToFieldRToDocError(left)) as Either<CToFieldError, Option<RefField>>;
+            },
             (doc) =>
               Right(
                 optionMapSome(doc, (doc) =>

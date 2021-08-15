@@ -1,6 +1,8 @@
 import { Doc, DocKey, DocSnapshot, Field, FieldSpec, Spec } from 'kira-core';
 import { Dict, Either, Left, Option } from 'trimop';
 
+import { Task } from './trimop/pipe';
+
 /**
  *
  */
@@ -73,7 +75,9 @@ export type PReadDocError = { readonly _errorType: 'PReadDocError' };
 /**
  *
  */
-export type PReadDoc<E extends PReadDocError> = (key: DocKey) => Promise<Either<E, PReadDocResult>>;
+export type PReadDoc<E extends PReadDocError = PReadDocError> = (
+  key: DocKey
+) => Task<Either<E, PReadDocResult>>;
 
 /**
  *
@@ -83,7 +87,7 @@ export type PGetNewDocIdError = { readonly _errorType: 'PGetNewDocIdError' };
 /**
  *
  */
-export type PGetNewDocId<E extends PGetNewDocIdError> = (p: {
+export type PGetNewDocId<E extends PGetNewDocIdError = PGetNewDocIdError> = (p: {
   readonly col: string;
 }) => Promise<Either<E, string>>;
 
@@ -95,8 +99,8 @@ export type PSetDocError = { readonly _errorType: 'PSetDocError' };
 /**
  *
  */
-export type PSetDoc<E extends PSetDocError, R = unknown> = (param: {
-  readonly data: Doc;
+export type PSetDoc<E extends PSetDocError = PSetDocError, R = unknown> = (param: {
+  readonly doc: Doc;
   readonly key: DocKey;
   readonly spec: Spec;
 }) => Promise<Either<E, R>>;
@@ -204,6 +208,7 @@ export type InvalidTypeRToDocError = {
   readonly col: string;
   readonly field: unknown;
   readonly fieldName: string;
+  readonly message?: string;
 };
 
 export function InvalidTypeRToDocError(
@@ -430,6 +435,7 @@ export type InvalidTypeCToFieldError = {
   readonly col: string;
   readonly field: unknown;
   readonly fieldName: string;
+  readonly message?: string;
 };
 
 export function InvalidTypeCToFieldError(
@@ -465,9 +471,110 @@ export function InitializingDocState(): InitializingDocState {
 }
 
 /**
+ * UnknownCollectionNameError
+ */
+export function UnknownCollectionNameError(
+  value: Omit<UnknownCollectionNameError, '_errorType'>
+): UnknownCollectionNameError {
+  return { _errorType: 'UnknownCollectionNameError', ...value };
+}
+
+export type UnknownCollectionNameError = {
+  readonly _errorType: 'UnknownCollectionNameError';
+  readonly col: string;
+};
+
+/**
  *
  */
-export type DocStateError = PReadDocError;
+export type CreateDocError<
+  CFTE extends CToFieldError = CToFieldError,
+  PGNDI extends PGetNewDocIdError = PGetNewDocIdError,
+  PSDE extends PSetDocError = PSetDocError
+> = UnknownCollectionNameError | CFTE | PGNDI | PSDE;
+
+/**
+ *
+ */
+export type CreateDocResult = {
+  readonly doc: Doc;
+  readonly id: string;
+};
+
+/**
+ *
+ */
+export type CreateDoc<
+  CFTE extends CToFieldError,
+  PSDE extends PSetDocError,
+  PGNDI extends PGetNewDocIdError
+> = (p: {
+  readonly cDoc: CDoc;
+  readonly col: string;
+  readonly id: Option<string>;
+}) => Promise<Either<CreateDocError<CFTE, PGNDI, PSDE>, CreateDocResult>>;
+
+/**
+ *
+ */
+export type DocStateError = { readonly _errorType: 'DocStateError' };
+
+/**
+ *
+ */
+export type CreateDocDocStateError<CDE extends CreateDocError> = {
+  readonly _errorType: 'DocStateError';
+  readonly _errorType2: 'CreateDoc';
+  readonly createDocError: CDE;
+};
+
+export function CreateDocDocStateError<CDE extends CreateDocError>(
+  createDocError: CDE
+): CreateDocDocStateError<CDE> {
+  return {
+    _errorType: 'DocStateError',
+    _errorType2: 'CreateDoc',
+    createDocError,
+  };
+}
+
+/**
+ *
+ */
+export type PReadDocDocStateError<PRDE extends PReadDocError> = {
+  readonly _errorType: 'DocStateError';
+  readonly _errorType2: 'PReadDoc';
+  readonly readDocError: PRDE;
+};
+
+export function PReadDocDocStateError<PRDE extends PReadDocError>(
+  readDocError: PRDE
+): PReadDocDocStateError<PRDE> {
+  return {
+    _errorType: 'DocStateError',
+    _errorType2: 'PReadDoc',
+    readDocError,
+  };
+}
+
+// /**
+//  *
+//  */
+// export type CToFieldDocStateError<CTFE extends CToFieldError> = {
+//   readonly _errorType: 'DocStateError';
+//   readonly _errorType2: 'CToField';
+//   readonly cToFieldError: CTFE;
+// };
+
+// export function CToFieldDocStateError<CTFE extends CToFieldError>(
+//   p: Omit<CToFieldDocStateError<CTFE>, '_errorType2' | '_errorType'>
+// ): CToFieldDocStateError<CTFE> {
+//   return {
+//     ...p,
+//     _errorType: 'DocStateError',
+//     _errorType2: 'CToField',
+//   };
+// }
 
 /**
  *
@@ -487,7 +594,7 @@ export function ContainsErrorDocState<E extends DocStateError>(
 /**
  *
  */
-export type NotExistsDocState<C extends CDoc> = {
+export type NotExistsDocState<C extends CDoc = CDoc> = {
   readonly create: (ocDocData: C) => void;
   readonly state: 'NotExists';
 };
@@ -544,50 +651,6 @@ export type DocState<
 );
 
 /**
- * UnknownCollectionNameError
- */
-export function UnknownCollectionNameError(
-  value: Omit<UnknownCollectionNameError, '_errorType'>
-): UnknownCollectionNameError {
-  return { _errorType: 'UnknownCollectionNameError', ...value };
-}
-
-export type UnknownCollectionNameError = {
-  readonly _errorType: 'UnknownCollectionNameError';
-  readonly col: string;
-};
-
-/**
- *
- */
-export type CreateDocError<
-  CFTE extends CToFieldError,
-  PGNDI extends PGetNewDocIdError,
-  PSDE extends PSetDocError
-> = UnknownCollectionNameError | CFTE | PGNDI | PSDE;
-
-/**
- *
- */
-export type CreateDocResult = {
-  readonly doc: Doc;
-  readonly id: string;
-};
-
-/**
- *
- */
-export type CreateDoc<
-  CFTE extends CToFieldError,
-  PSDE extends PSetDocError,
-  PGNDI extends PGetNewDocIdError
-> = (p: {
-  readonly cDoc: CDoc;
-  readonly col: string;
-  readonly id: Option<string>;
-}) => Promise<Either<CreateDocError<CFTE, PGNDI, PSDE>, CreateDocResult>>;
-
-/**
  *
  */
 export type SetDocState<
@@ -599,9 +662,7 @@ export type SetDocState<
 /**
  *
  */
-export type InitialFetchDoc<PRDE extends PReadDocError = PReadDocError> = (
-  key: DocKey
-) => Promise<Either<unknown, DocState<PRDE>>>;
+export type InitialFetchDoc = (key: DocKey) => void;
 
 /**
  *
