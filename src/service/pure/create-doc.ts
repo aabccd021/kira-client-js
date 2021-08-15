@@ -1,45 +1,49 @@
-import { Doc, Field, Spec } from 'kira-core';
-import {
-  Either,
-  eitherFold,
-  eitherMapRight,
-  Left,
-  optionFold,
-  optionFromNullable,
-  Right,
-  Option
-} from 'trimop';
+import { DocSnapshot, Spec } from 'kira-core';
+import { Either, Option } from 'trimop';
 
-import { _, dLookup, dMap, oMap, oToSome, teMap, toTaskRight, tParallel, tMap, DEntry, Task, dFromEntry, deCompact } from '../../trimop/pipe';
 import {
-  CField,
+  _,
+  deCompact,
+  DEntry,
+  dFromEntry,
+  dLookup,
+  dMap,
+  doCompact,
+  oMap,
+  oToSome,
+  Task,
+  teFlatten,
+  teMap,
+  teMapLeft,
+  tMap,
+  toTaskLeft,
+  toTaskRight,
+  tParallel,
+} from '../../trimop/pipe';
+import {
   CreateDoc,
-  CreateDocResult,
+  CreateDocError,
   CToField,
-  CToFieldError,
+  CToFieldCreateDocError,
   PGetNewDocId,
-  PGetNewDocIdError,
+  PGetNewDocIdCreateDocError,
   PSetDoc,
-  PSetDocError,
-  UnknownCollectionNameError,
+  PSetDocCreateDocError,
+  UnknownColCreateDocError,
 } from '../../type';
 
-export function buildCreateDoc<
-  CFTE extends CToFieldError,
-  PSDE extends PSetDocError,
-  PGNDI extends PGetNewDocIdError
->({
+export function buildCreateDoc({
   cToField,
   spec,
   pGetNewDocId,
   pSetDoc,
 }: {
-  readonly cToField: CToField<CFTE>;
-  readonly pGetNewDocId: PGetNewDocId<PGNDI>;
-  readonly pSetDoc: PSetDoc<PSDE>;
+  readonly cToField: CToField;
+  readonly pGetNewDocId: PGetNewDocId;
+  readonly pSetDoc: PSetDoc;
   readonly spec: Spec;
-}): CreateDoc<CFTE, PSDE, PGNDI> {
-  return ({ cDoc, col, id: givenId }) => {
+}): CreateDoc {
+  return ({ cDoc, col, id: givenId }) =>
     _(spec)
       ._(dLookup(col))
       ._(
@@ -63,74 +67,36 @@ export function buildCreateDoc<
                   ._(tParallel)
                   ._(tMap(dFromEntry))
                   ._(tMap(deCompact))
+                  ._(teMap(doCompact))
+                  ._(teMap((doc) => ({ doc, id })))
+                  ._<Task<Either<CreateDocError, DocSnapshot>>>(teMapLeft(CToFieldCreateDocError))
                   .value()
               )
             )
+            ._(teMapLeft(PGetNewDocIdCreateDocError))
+            ._(teFlatten)
             .value()
         )
       )
-      .value();
-    return optionFold(
-      optionFromNullable(spec[col]),
-      async () => Left(UnknownCollectionNameError({ col })),
-      (colSpec) =>
-        optionFold(
-          givenId,
-          () => pGetNewDocId({ col }),
-          async (id) => Right(id)
-        ).then((id) =>
-          eitherFold(
-            id,
-            async (left) => Left(left),
-            (id) =>
-              Promise.all(
-                Object.entries(colSpec).map(([fieldName, fieldSpec]) =>
-                  cToField({
-                    context: {
-                      col,
-                      field: optionFromNullable<CField>(cDoc[fieldName]),
-                      fieldName,
-                      id,
-                    },
-                    fieldSpec,
-                  }).then((field) => ({ field, fieldName }))
-                )
-              )
-                .then((doc) =>
-                  doc.reduce<Either<CFTE, Doc>>(
-                    (acc, { fieldName, field }) =>
-                      eitherMapRight(acc, (acc) =>
-                        eitherMapRight(field, (field) =>
-                          optionFold(
-                            field,
-                            () => Right(acc),
-                            (field) =>
-                              Right({
-                                ...acc,
-                                [fieldName]: field,
-                              })
-                          )
-                        )
-                      ),
-                    Right({})
-                  )
-                )
-                .then((doc) =>
-                  eitherFold(
-                    doc,
-                    async (left) => Left(left),
-                    (doc) =>
-                      pSetDoc({ doc, key: { col, id }, spec }).then((result) =>
-                        eitherFold(
-                          result,
-                          (left) => Left(left) as Either<PSDE, CreateDocResult>,
-                          () => Right({ doc, id })
-                        )
-                      )
-                  )
-                )
-          )
+      ._(
+        oToSome<Task<Either<CreateDocError, DocSnapshot>>>(() =>
+          _(UnknownColCreateDocError({ col }))._(toTaskLeft).value()
         )
-    );
-  };
+      )
+      ._(
+        teMap((snapshot) =>
+          _(
+            pSetDoc({
+              doc: snapshot.doc,
+              key: { col, id: snapshot.id },
+              spec,
+            })
+          )
+            ._(teMap(() => snapshot))
+            ._(teMapLeft(PSetDocCreateDocError))
+            .value()
+        )
+      )
+      ._(teFlatten)
+      .value();
 }

@@ -228,19 +228,19 @@ export function RToFieldNeverError(never: never): RToFieldNeverError {
 /**
  *
  */
-export function RToDocUnknownCollectionNameError(
-  value: Omit<RToDocUnknownCollectionNameError, '_errorType' | '_errorType2'>
-): RToDocUnknownCollectionNameError {
+export function RToDocUnknownColError(
+  value: Omit<RToDocUnknownColError, '_errorType' | '_errorType2'>
+): RToDocUnknownColError {
   return {
     _errorType: 'RToDocError',
-    _errorType2: 'UnknownCollectionNameError',
+    _errorType2: 'UnknownColError',
     ...value,
   };
 }
 
-export type RToDocUnknownCollectionNameError = {
+export type RToDocUnknownColError = {
   readonly _errorType: 'RToDocError';
-  readonly _errorType2: 'UnknownCollectionNameError';
+  readonly _errorType2: 'UnknownColError';
   readonly col: string;
 };
 
@@ -458,48 +458,102 @@ export function InitializingDocState(): InitializingDocState {
 }
 
 /**
- * UnknownCollectionNameError
+ *
  */
-export function UnknownCollectionNameError(
-  value: Omit<UnknownCollectionNameError, '_errorType'>
-): UnknownCollectionNameError {
-  return { _errorType: 'UnknownCollectionNameError', ...value };
+export type CreateDocError = { readonly _errorType: 'CreateDocError' };
+
+/**
+ *
+ * @param value
+ * @returns
+ */
+export function PSetDocCreateDocError<PSDE extends PSetDocError>(
+  error: PSDE
+): PSetDocCreateDocError<PSDE> {
+  return {
+    _errorType: 'CreateDocError',
+    _errorType2: 'PSetDocError',
+    error,
+  };
 }
 
-export type UnknownCollectionNameError = {
-  readonly _errorType: 'UnknownCollectionNameError';
+export type PSetDocCreateDocError<PSDE extends PSetDocError> = {
+  readonly _errorType: 'CreateDocError';
+  readonly _errorType2: 'PSetDocError';
+  readonly error: PSDE;
+};
+
+/**
+ *
+ * @param value
+ * @returns
+ */
+export function UnknownColCreateDocError(
+  value: Omit<UnknownColCreateDocError, '_errorType' | '_errorType2'>
+): UnknownColCreateDocError {
+  return {
+    _errorType: 'CreateDocError',
+    _errorType2: 'UnknownColError',
+    ...value,
+  };
+}
+
+export type UnknownColCreateDocError = {
+  readonly _errorType: 'CreateDocError';
+  readonly _errorType2: 'UnknownColError';
   readonly col: string;
 };
 
 /**
  *
+ * @param value
+ * @returns
  */
-export type CreateDocError<
-  CFTE extends CToFieldError = CToFieldError,
-  PGNDI extends PGetNewDocIdError = PGetNewDocIdError,
-  PSDE extends PSetDocError = PSetDocError
-> = UnknownCollectionNameError | CFTE | PGNDI | PSDE;
+export function CToFieldCreateDocError<CTFE extends CToFieldError = CToFieldError>(
+  err: CTFE
+): CToFieldCreateDocError<CTFE> {
+  return {
+    _errorType: 'CreateDocError',
+    _errorType2: 'CToFieldError',
+    err,
+  };
+}
+
+export type CToFieldCreateDocError<CTFE extends CToFieldError = CToFieldError> = {
+  readonly _errorType: 'CreateDocError';
+  readonly _errorType2: 'CToFieldError';
+  readonly err: CTFE;
+};
 
 /**
  *
+ * @param value
+ * @returns
  */
-export type CreateDocResult = {
-  readonly doc: Doc;
-  readonly id: string;
+export function PGetNewDocIdCreateDocError<PGNIE extends PGetNewDocIdError>(
+  err: PGNIE
+): PGetNewDocIdCreateDocError<PGNIE> {
+  return {
+    _errorType: 'CreateDocError',
+    _errorType2: 'PGetNewDocIdError',
+    err,
+  };
+}
+
+export type PGetNewDocIdCreateDocError<PGNIE extends PGetNewDocIdError> = {
+  readonly _errorType: 'CreateDocError';
+  readonly _errorType2: 'PGetNewDocIdError';
+  readonly err: PGNIE;
 };
 
 /**
  *
  */
-export type CreateDoc<
-  CFTE extends CToFieldError,
-  PSDE extends PSetDocError,
-  PGNDI extends PGetNewDocIdError
-> = (p: {
+export type CreateDoc<E extends CreateDocError = CreateDocError> = (p: {
   readonly cDoc: CDoc;
   readonly col: string;
   readonly id: Option<string>;
-}) => Task<Either<CreateDocError<CFTE, PGNDI, PSDE>, CreateDocResult>>;
+}) => Task<Either<E, DocSnapshot>>;
 
 /**
  *

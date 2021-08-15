@@ -131,6 +131,16 @@ export function eFlatten<E, T>(e: Either<E, Either<E, T>>): Either<E, T> {
   return isLeft(e) ? e : e.right;
 }
 
+() => () => 1;
+
+export function z<T>(p: () => Promise<() => Promise<T>>): () => Promise<T> {
+  return () => p().then((r) => r());
+}
+
+export function tFlatten<T>(e: Task<Task<T>>): Task<T> {
+  return () => e().then((r) => r());
+}
+
 export function leftTo<EResult, E>(mapper: (t: E) => EResult): LeftTo<EResult, E> {
   return (l) => ({
     _tag: 'Left',
@@ -313,6 +323,10 @@ export function oDo2<A, B>(effect: (a: A, b: B) => void): Identity<Option<readon
   };
 }
 
+export function return2<T, A, B>(r: (a: A, b: B) => T): (p: readonly [A, B]) => T {
+  return ([a, b]) => r(a, b);
+}
+
 export function oDo3<A, B, C>(
   effect: (a: A, b: B, c: C) => void
 ): Identity<Option<readonly [A, B, C]>> {
@@ -369,4 +383,22 @@ export function deCompact<E, T>(de: Dict<Either<E, NonNullable<T>>>): Either<E, 
       )
     )
     .value();
+}
+
+export function doCompact<T>(d: Dict<Option<NonNullable<T>>>): Dict<T> {
+  return _(d)
+    ._(
+      dReduce({} as Dict<T>, (acc, field, fieldName) =>
+        isNone(field) ? acc : { ...acc, [fieldName]: field.value }
+      )
+    )
+    .value();
+}
+
+export function teFlatten<E, T>(e: Task<Either<E, Task<Either<E, T>>>>): Task<Either<E, T>> {
+  return _(e)
+    ._(tMap((e) => (isLeft(e) ? Task(e) : e.right)))
+    ._(tFlatten)
+    .value();
+  // if (isLeft(e) {e : () => e.right().then((r) => r))).value()
 }
