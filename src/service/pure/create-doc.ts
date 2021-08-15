@@ -1,4 +1,4 @@
-import { Doc, Spec } from 'kira-core';
+import { Doc, Field, Spec } from 'kira-core';
 import {
   Either,
   eitherFold,
@@ -7,9 +7,10 @@ import {
   optionFold,
   optionFromNullable,
   Right,
+  Option
 } from 'trimop';
 
-import { _, dLookup, dMap, oMap, oToSome, teMap, toTaskRight, tParallel } from '../../trimop/pipe';
+import { _, dLookup, dMap, oMap, oToSome, teMap, toTaskRight, tParallel, tMap, DEntry, Task, dFromEntry, deCompact } from '../../trimop/pipe';
 import {
   CField,
   CreateDoc,
@@ -55,10 +56,13 @@ export function buildCreateDoc<
                         ._(dLookup(fieldName))
                         ._((field) => ({ col, field, fieldName, id }))
                         ._((context) => cToField({ context, fieldSpec }))
+                        ._(tMap((field) => DEntry(fieldName, field)))
                         .value()
                     )
                   )
                   ._(tParallel)
+                  ._(tMap(dFromEntry))
+                  ._(tMap(deCompact))
                   .value()
               )
             )

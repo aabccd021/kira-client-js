@@ -127,6 +127,10 @@ export function oFlatten<T>(option: Option<Option<T>>): Option<T> {
   return isNone(option) ? option : option.value;
 }
 
+export function eFlatten<E, T>(e: Either<E, Either<E, T>>): Either<E, T> {
+  return isLeft(e) ? e : e.right;
+}
+
 export function leftTo<EResult, E>(mapper: (t: E) => EResult): LeftTo<EResult, E> {
   return (l) => ({
     _tag: 'Left',
@@ -191,6 +195,16 @@ export interface Dict<T> {
   readonly [index: string]: NonNullable<T>;
 }
 
+export type DEntry<T> = readonly [string, NonNullable<T>];
+
+export function DEntry<T>(key: string, value: NonNullable<T>): DEntry<T> {
+  return [key, value];
+}
+
+export function dFromEntry<T>(entries: readonly DEntry<T>[]): Dict<T> {
+  return Object.fromEntries(entries);
+}
+
 export type DLookup<T> = (dict: Dict<T>) => Option<T>;
 
 export function dLookup<T>(key: string): DLookup<T> {
@@ -205,6 +219,28 @@ export function dMap<TR, T>(
   return (dict) =>
     Object.entries(dict).map(([fieldName, field], index) => mapper(field, fieldName, index));
 }
+
+export type DReduce<TR, T> = (dict: Dict<T>) => TR;
+
+export function dReduce<TR, T>(
+  initialState: TR,
+  reducer: (acc: TR, value: T, key: string, index: number) => TR
+): DReduce<TR, T> {
+  return (dict) =>
+    Object.entries(dict).reduce(
+      (acc, [key, value], index) => reducer(acc, value, key, index),
+      initialState
+    );
+}
+
+// export type DEReduce<TR, E, T> = (dict: Dict<Either<E, T>>) => TR;
+
+// export function deReduce<TR,E, T>(
+//   initialState: TR,
+//   reducer: (acc: TR, value: Either<E, T>, key: string, index: number) => TR
+// ): DEReduce<TR,E, T> {
+//   return dReduce(initialState, reducer)
+// }
 
 export function toTaskRight<T>(t: T): Task<Right<T>> {
   return _(t)._(Right)._(Task).value();
@@ -232,9 +268,12 @@ export function bind2<A, B, C>(
   return ([b, c]) => [b, c, mapper(b, c)];
 }
 
-export type OCompact3<A, B, C> = (
-  t: readonly [Option<A>, Option<B>, Option<C>]
-) => Option<readonly [A, B, C]>;
+export function eCompact2<E, B, A>([b, a]: readonly [Either<E, B>, Either<E, A>]): Either<
+  E,
+  readonly [B, A]
+> {
+  return isRight(b) ? (isRight(a) ? Right([b.right, a.right]) : a) : b;
+}
 
 export function oCompact2<B, A>([b, a]: readonly [Option<B>, Option<A>]): Option<readonly [B, A]> {
   return isSome(b) && isSome(a) ? Some([b.value, a.value]) : None();
@@ -251,6 +290,12 @@ export function oMap2<T, A, B>(
   mapper: (a: A, b: B) => T
 ): (o: Option<readonly [A, B]>) => Option<T> {
   return (option) => (isNone(option) ? option : Some(mapper(...option.value)));
+}
+
+export function eMap2<T, E, A, B>(
+  mapper: (a: A, b: B) => T
+): (o: Either<E, readonly [A, B]>) => Either<E, T> {
+  return (either) => (isLeft(either) ? either : Right(mapper(...either.right)));
 }
 
 export function oMap3<T, A, B, C>(
@@ -310,4 +355,18 @@ export function teToRight<E, T>(mapper: (l: Left<E>) => T): TEFold<T, E, T> {
 
 export function teMapLeft<EResult, E, T>(mapper: (l: E) => EResult): TEMapLeft<EResult, E, T> {
   return tMap(eMapLeft(mapper));
+}
+
+export function deCompact<E, T>(de: Dict<Either<E, NonNullable<T>>>): Either<E, Dict<T>> {
+  return _(de)
+    ._(
+      dReduce(Right({}) as Either<E, Dict<T>>, (acc, value, key) =>
+        _(acc)
+          ._(bind(() => value))
+          ._(eCompact2)
+          ._(eMap2((acc, value) => ({ ...acc, [key]: value })))
+          .value()
+      )
+    )
+    .value();
 }

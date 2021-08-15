@@ -23,7 +23,6 @@ import {
   eToO,
   oCompact2,
   oCompact3,
-  oDo3,
   oeMap,
   oFlatten,
   oMap,
@@ -31,9 +30,9 @@ import {
   oMap3,
   oToSome,
   Task,
+  tDo,
   teMap,
   tFrom,
-  tDo,
 } from '../trimop/pipe';
 import {
   DB,
@@ -191,7 +190,8 @@ export function buildSetDocState({
   readonly spec: Spec;
 }): SetDocState {
   return (key) => (newDocState) => {
-    _(_getDocState(key))
+    _(key)
+      ._(_getDocState)
       ._(doEffect(() => _setDocState(key, newDocState)))
       ._(bind(() => (newDocState.state === 'Ready' ? Some(newDocState) : None())))
       ._(bind2(() => getColTrigger({ buildDraft, col: key.col, spec })))
@@ -240,13 +240,13 @@ export function buildSetDocState({
         )
       )
       ._(oFlatten)
-      ._(oMap((runTrigger) => _(runTrigger)._(tDo).value()))
+      ._(oMap((runTriggerTask) => _(runTriggerTask)._(tDo).value()))
       .value();
   };
 }
 
 /**
- * TODO: make code more pretty
+ * TODO: error should not be made none (disable eToO)
  * @param param0
  */
 export function deleteDocState({
@@ -262,9 +262,9 @@ export function deleteDocState({
   readonly rToDoc: RToDoc;
   readonly spec: Spec;
 }): void {
-  const docState = _getDocState(key);
-  _deleteDocState(key);
-  _(docState)
+  _(key)
+    ._(_getDocState)
+    ._(doEffect(() => _deleteDocState(key)))
     ._(oMap((docState) => (docState.state === 'Ready' ? Some(docState) : None())))
     ._(oFlatten)
     ._(
@@ -286,7 +286,7 @@ export function deleteDocState({
     )
     ._(oCompact3)
     ._(
-      oDo3((docState, doc, onColDeleteTrigger) =>
+      oMap3((docState, doc, onColDeleteTrigger) =>
         runTrigger<DocSnapshot>({
           actionTrigger: onColDeleteTrigger,
           col: key.col,
@@ -299,6 +299,7 @@ export function deleteDocState({
         })
       )
     )
+    ._(oMap((runTriggerTask) => _(runTriggerTask)._(tDo).value()))
     .value();
 }
 
