@@ -200,9 +200,9 @@ export const setDocState = buildSetDocState({
 
 export const createDoc = buildCreateDoc({
   cToField,
-  spec,
   pGetNewDocId,
   pSetDoc,
+  spec,
 });
 
 const initialFetchDoc = buildInitialFetchDoc({
@@ -219,7 +219,6 @@ const initialFetchDoc = buildInitialFetchDoc({
 export const makeDocState = buildMakeDocState({
   initialFetchDoc,
 });
-
 
 export type MemeCDoc = {
   memeImage: MemeImageDoc & { _id: string };

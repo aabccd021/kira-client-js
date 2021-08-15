@@ -4,8 +4,7 @@ import { Either, Left, Some } from 'trimop';
 import {
   _,
   eMap,
-  eMapLeft,
-  leftTo,
+  eMapLeftTo,
   oMap,
   oToSome,
   Task,
@@ -53,7 +52,7 @@ export function cToImageField<PUIE extends PUploadImageError>({
                           .value()
                       )
                     )
-                    ._(eMapLeft(leftTo(CToFieldUploadImageError)))
+                    ._(eMapLeftTo(CToFieldUploadImageError))
                     .value()
                 )
               )

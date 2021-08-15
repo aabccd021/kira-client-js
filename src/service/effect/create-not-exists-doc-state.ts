@@ -1,10 +1,25 @@
-import { Spec } from "kira-core";
-import { BuildDraft } from "kira-nosql";
-import { Some } from "trimop";
-import { NotExistsDocState, CToField, DocToR, PGetNewDocId, PReadDoc, PSetDoc, RToDoc, buildSetDocState, buildCreateDoc, CreatingDocState, ReadyDocState, CreateDocDocStateError, CreateNotExistsDocState } from "../..";
-import { _, eMap, eMapLeft, leftTo, eToRight, doEffect } from "../../trimop/pipe";
-import { buildCreateContainsErrorDocState } from "./create-contains-error-doc-state";
+import { Spec } from 'kira-core';
+import { BuildDraft } from 'kira-nosql';
+import { Some } from 'trimop';
 
+import {
+  buildCreateDoc,
+  buildSetDocState,
+  CreateDocDocStateError,
+  CreateNotExistsDocState,
+  CreatingDocState,
+  CToField,
+  DocToR,
+  NotExistsDocState,
+  PGetNewDocId,
+  PReadDoc,
+  PSetDoc,
+  ReadyDocState,
+  RToDoc,
+} from '../..';
+import { _, doEffect, eMap, eMapLeftTo, eToRight } from '../../trimop/pipe';
+// eslint-disable-next-line import/no-cycle
+import { buildCreateContainsErrorDocState } from './create-contains-error-doc-state';
 
 export function buildCreateNotExistsDocState({
   buildDraft,
@@ -54,7 +69,7 @@ export function buildCreateNotExistsDocState({
           _(createResult)
             ._(eMap(({ doc, id }) => ({ data: docToR(doc), id })))
             ._(eMap(ReadyDocState))
-            ._(eMapLeft(leftTo(CreateDocDocStateError)))
+            ._(eMapLeftTo(CreateDocDocStateError))
             ._(eToRight(createContainsErrorDocState(key)))
             ._(doEffect(setDocState(key)))
             .value()

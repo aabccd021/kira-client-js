@@ -1,9 +1,35 @@
-import { Spec } from "kira-core";
-import { BuildDraft } from "kira-nosql";
-import { PReadDocError, CToField, DocToR, PGetNewDocId, PReadDoc, PSetDoc, RToDoc, InitialFetchDoc, buildSetDocState, getDocState, ReadyDocState, PReadDocDocStateError } from "../..";
-import { _, oMap, Task,  eMap, eMapLeft, leftTo, eToRight, doTaskEffect, tToPromise, oToSome, tMap } from "../../trimop/pipe";
-import { buildCreateContainsErrorDocState } from "./create-contains-error-doc-state";
-import { buildCreateNotExistsDocState } from "./create-not-exists-doc-state";
+import { Spec } from 'kira-core';
+import { BuildDraft } from 'kira-nosql';
+
+import {
+  buildSetDocState,
+  CToField,
+  DocToR,
+  getDocState,
+  InitialFetchDoc,
+  PGetNewDocId,
+  PReadDoc,
+  PReadDocDocStateError,
+  PReadDocError,
+  PSetDoc,
+  ReadyDocState,
+  RToDoc,
+} from '../..';
+import {
+  _,
+  doTaskEffect,
+  oMap,
+  oToSome,
+  Task,
+  teMap,
+  teMapLeftTo,
+  teToRight,
+  tToPromise,
+} from '../../trimop/pipe';
+// eslint-disable-next-line import/no-cycle
+import { buildCreateContainsErrorDocState } from './create-contains-error-doc-state';
+// eslint-disable-next-line import/no-cycle
+import { buildCreateNotExistsDocState } from './create-not-exists-doc-state';
 
 export function buildInitialFetchDoc<PRDE extends PReadDocError>({
   buildDraft,
@@ -56,19 +82,18 @@ export function buildInitialFetchDoc<PRDE extends PReadDocError>({
           _(key)
             ._(pReadDoc)
             ._(
-              tMap((res) =>
-                _(res)
-                  ._(
-                    eMap((remoteDoc) =>
-                      remoteDoc.state === 'exists'
-                        ? ReadyDocState({ data: docToR(remoteDoc.data), id: key.id })
-                        : createNotExistsDocState(key)
-                    )
-                  )
-                  ._(eMapLeft(leftTo(PReadDocDocStateError)))
-                  ._(eToRight(createContainsErrorDocState(key))).value()
+              teMap((remoteDoc) =>
+                remoteDoc.state === 'exists'
+                  ? _(remoteDoc.data)
+                      ._(docToR)
+                      ._((data) => ReadyDocState({ data, id: key.id }))
+                      .value()
+                  : createNotExistsDocState(key)
               )
-            ).value()
+            )
+            ._(teMapLeftTo(PReadDocDocStateError))
+            ._(teToRight(createContainsErrorDocState(key)))
+            .value()
         )
       )
       ._(doTaskEffect(setDocState(key)))

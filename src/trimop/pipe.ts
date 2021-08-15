@@ -127,10 +127,22 @@ export function oFlatten<T>(option: Option<Option<T>>): Option<T> {
   return isNone(option) ? option : option.value;
 }
 
+export function leftTo<EResult, E>(mapper: (t: E) => EResult): LeftTo<EResult, E> {
+  return (l) => ({
+    _tag: 'Left',
+    errorObject: l.errorObject,
+    left: mapper(l.left),
+  });
+}
+
 export function eMapLeft<EResult, E, T>(
   mapper: (l: Left<E>) => Left<EResult>
 ): EMapLeft<EResult, E, T> {
   return (either) => (isLeft(either) ? mapper(either) : either);
+}
+
+export function eMapLeftTo<EResult, E, T>(mapper: (l: E) => EResult): EMapLeft<EResult, E, T> {
+  return (either) => (isLeft(either) ? leftTo(mapper)(either) : either);
 }
 
 export function eMap<TResult, E, T>(mapper: (t: T) => TResult): EMap<TResult, E, T> {
@@ -164,14 +176,6 @@ export function tMap<TResult, T>(mapper: (t: T) => TResult): TMap<TResult, T> {
 
 export function tParallel<T>(tasks: readonly Task<T>[]): Task<readonly T[]> {
   return () => Promise.all(tasks.map(tToPromise));
-}
-
-export function leftTo<EResult, E>(mapper: (t: E) => EResult): LeftTo<EResult, E> {
-  return (l) => ({
-    _tag: 'Left',
-    errorObject: l.errorObject,
-    left: mapper(l.left),
-  });
 }
 
 export function doTaskEffect<T>(effect: (t: T) => void): Identity<Task<T>> {
@@ -289,16 +293,26 @@ export function oeMap<TResult, E, T>(mapper: (e: T) => TResult): OEMap<TResult, 
 //   return (either) => (isLeft(either) ? either : Right(mapper(either.right)));
 // }
 
-// export type EMapLeft<EResult, E, T> = (either: Either<E, T>) => Either<EResult, T>;
-
 // export function eMapLeft<EResult, E, T>(
 //   mapper: (l: Left<E>) => Left<EResult>
 // ): EMapLeft<EResult, E, T> {
 //   return (either) => (isLeft(either) ? mapper(either) : either);
 // }
 
+export type TEMapLeft<EResult, E, T> = (either: Task<Either<E, T>>) => Task<Either<EResult, T>>;
+
+export function teMapLeft<EResult, E, T>(
+  mapper: (l: Left<E>) => Left<EResult>
+): TEMapLeft<EResult, E, T> {
+  return tMap(eMapLeft(mapper));
+}
+
 export type TEFold<TResult, E, T> = (either: Task<Either<E, T>>) => Task<TResult>;
 
 export function teToRight<E, T>(mapper: (l: Left<E>) => T): TEFold<T, E, T> {
   return tMap(eToRight(mapper));
+}
+
+export function teMapLeftTo<EResult, E, T>(mapper: (l: E) => EResult): TEMapLeft<EResult, E, T> {
+  return tMap(eMapLeftTo(mapper));
 }
