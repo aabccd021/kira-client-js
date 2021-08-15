@@ -1,4 +1,4 @@
-import { Either, isLeft, isNone, isRight, Left, Option, Right, Some } from 'trimop';
+import { Either, isLeft, isNone, isRight, Left, None, Option, Right, Some } from 'trimop';
 
 export type C<T> = {
   readonly _: <TResult>(mapper: (t: T) => TResult) => C<TResult>;
@@ -112,6 +112,17 @@ export function oMap<TResult, T>(mapper: (t: T) => TResult): OMap<TResult, T> {
   return (option) => (isNone(option) ? option : Some(mapper(option.value)));
 }
 
+export function oMapC<TResult, T>(mapper: (t: C<T>) => C<TResult>): OMap<TResult, T> {
+  return (option) => (isNone(option) ? option : Some(mapper(_(option.value)).eval()));
+}
+
+export function oFrom<T>(t: NonNullable<T> | undefined | null): Option<T> {
+  // eslint-disable-next-line no-null/no-null
+  return t === undefined || t === null ? None() : Some(t);
+}
+
+
+
 export function toTask<T>(t: T): Task<T> {
   return () => Promise.resolve(t);
 }
@@ -140,4 +151,15 @@ export function doTaskEffect<T>(effect: (t: T) => void): Identity<Task<T>> {
   return (t) => {
     return () => tToPromise(t).then(effect).then(t);
   };
+}
+
+// eslint-disable-next-line functional/prefer-type-literal
+export interface Dict<T> {
+  readonly [index: string]: NonNullable<T>;
+}
+
+export type DLookup<T> = (dict: Dict<T>) => Option<T>;
+
+export function dLookup<T>(key: string): DLookup<T> {
+  return (dict) => oFrom(dict[key]);
 }

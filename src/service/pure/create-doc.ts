@@ -8,6 +8,7 @@ import {
   optionFromNullable,
   Right,
 } from 'trimop';
+import { _ } from '../../trimop/pipe';
 
 import {
   CField,
@@ -37,19 +38,35 @@ export function buildCreateDoc<
   readonly pSetDoc: PSetDoc<PSDE>;
   readonly spec: Spec;
 }): CreateDoc<CFTE, PSDE, PGNDI> {
-  return ({ cDoc, col, id: givenId }) =>
-    optionFold(
+  return ({ cDoc, col, id: givenId }) => {
+    //   _(spec)
+    //     ._(dLookup(col))
+    //     ._(
+    //       oMap((colSpec) =>
+    //         _(givenId)
+    //           ._(oMapC((t) => t._(Right)._(toTask)))
+    //           ._(
+    //             oToSomeC(() =>
+    //               _({ col })
+    //                 ._(pGetNewDocId)
+    //                 ._((x) => x)
+    //             )
+    //           )
+    //           .eval()
+    //       )
+    //     );
+    return optionFold(
       optionFromNullable(spec[col]),
-      () => Promise.resolve(Left(UnknownCollectionNameError({ col }))),
+      async () => Left(UnknownCollectionNameError({ col })),
       (colSpec) =>
         optionFold(
           givenId,
           () => pGetNewDocId({ col }),
-          (id) => Promise.resolve(Right(id))
+          async (id) => Right(id)
         ).then((id) =>
           eitherFold(
             id,
-            (left) => Promise.resolve(Left(left)),
+            async (left) => Left(left),
             (id) =>
               Promise.all(
                 Object.entries(colSpec).map(([fieldName, fieldSpec]) =>
@@ -100,4 +117,5 @@ export function buildCreateDoc<
           )
         )
     );
+  };
 }
