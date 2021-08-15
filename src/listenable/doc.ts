@@ -287,6 +287,7 @@ export function deleteDocState({
 }): void {
   const docState = _getDocState(key);
   _deleteDocState(key);
+
   optionMapSome(docState, (docState) => {
     if (docState.state === 'Ready') {
       optionMapSome(getColTrigger({ buildDraft, col: key.col, spec }), (colTrigger) =>
