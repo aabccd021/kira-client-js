@@ -1,7 +1,7 @@
 import { StringField, StringFieldSpec } from 'kira-core';
 import { Either, Left, Right, Some } from 'trimop';
 
-import { _, oMap, oToSome, toRightSome } from '../trimop/pipe';
+import { _, oMap, oToSome, Task, toRightSome } from '../trimop/pipe';
 import {
   CToFieldContext,
   CToFieldError,
@@ -11,12 +11,12 @@ import {
   RToFieldContext,
 } from '../type';
 
-export async function cToStringField({
+export function cToStringField({
   context: { fieldName, col, field },
 }: {
   readonly context: CToFieldContext;
   readonly fieldSpec: StringFieldSpec;
-}): Promise<Either<CToFieldError, Some<StringField>>> {
+}): Task<Either<CToFieldError, Some<StringField>>> {
   return _(field)
     ._(
       oMap((field) =>
@@ -30,6 +30,7 @@ export async function cToStringField({
         Left(InvalidTypeCToFieldError({ col, field, fieldName }))
       )
     )
+    ._(Task)
     .value();
 }
 

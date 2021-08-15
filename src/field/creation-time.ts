@@ -1,7 +1,7 @@
 import { CreationTimeFieldSpec, DateField } from 'kira-core';
 import { Either, Left, None, Right, Some } from 'trimop';
 
-import { _, oMap, oToSome, toRightSome } from '../trimop/pipe';
+import { _, oMap, oToSome, Task, toRightSome } from '../trimop/pipe';
 import {
   CToFieldContext,
   CToFieldError,
@@ -11,15 +11,16 @@ import {
   RToFieldContext,
 } from '../type';
 
-export async function cToCreationTimeField({
+export function cToCreationTimeField({
   context: { field, fieldName, col },
 }: {
   readonly context: CToFieldContext;
   readonly fieldSpec: CreationTimeFieldSpec;
-}): Promise<Either<CToFieldError, None>> {
+}): Task<Either<CToFieldError, None>> {
   return _(field)
     ._(oMap(() => Left(InvalidTypeCToFieldError({ col, field, fieldName }))))
     ._(oToSome<Either<CToFieldError, None>>(() => Right(None())))
+    ._(Task)
     .value();
 }
 

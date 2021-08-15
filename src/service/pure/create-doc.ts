@@ -9,6 +9,7 @@ import {
   Right,
 } from 'trimop';
 
+import { _, dLookup, dMap, oMap, oToSome, teMap, toTaskRight, tParallel } from '../../trimop/pipe';
 import {
   CField,
   CreateDoc,
@@ -38,38 +39,33 @@ export function buildCreateDoc<
   readonly spec: Spec;
 }): CreateDoc<CFTE, PSDE, PGNDI> {
   return ({ cDoc, col, id: givenId }) => {
-    // _(spec)
-    //   ._(dLookup(col))
-    //   ._(
-    //     oMapC((colSpec) =>
-    //       _(givenId)
-    //         ._(oMapC((t) => t._(Right)._(Task)))
-    //         ._(oToSomeC(() => _({ col })._(pGetNewDocId)))
-    //         ._(
-    //           tMapC((id) =>
-    //             id._(
-    //               eMap((id) =>
-    //                 colSpec
-    //                   ._(
-    //                     dMapC((fieldSpec, fieldName) =>
-    //                       _(cDoc)
-    //                         ._(dLookup(fieldName))
-    //                         ._((field) =>
-    //                           cToField({
-    //                             context: { col, field, fieldName, id },
-    //                             fieldSpec,
-    //                           })
-    //                         )
-    //                     )
-    //                   )
-    //                   ._(tParallel)._()
-    //               )
-    //             )
-    //           )
-    //         )
-    //     )
-    //   )
-    //   .eval();
+    _(spec)
+      ._(dLookup(col))
+      ._(
+        oMap((colSpec) =>
+          _(givenId)
+            ._(oMap((t) => _(t)._(toTaskRight).value()))
+            ._(oToSome(() => _({ col })._(pGetNewDocId).value()))
+            ._(
+              teMap((id) =>
+                _(colSpec)
+                  ._(
+                    dMap((fieldSpec, fieldName) =>
+                      _(cDoc)
+                        ._(dLookup(fieldName))
+                        ._((field) => ({ col, field, fieldName, id }))
+                        ._((context) => cToField({ context, fieldSpec }))
+                        .value()
+                    )
+                  )
+                  ._(tParallel)
+                  .value()
+              )
+            )
+            .value()
+        )
+      )
+      .value();
     return optionFold(
       optionFromNullable(spec[col]),
       async () => Left(UnknownCollectionNameError({ col })),

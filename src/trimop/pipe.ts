@@ -172,6 +172,12 @@ export function tParallel<T>(tasks: readonly Task<T>[]): Task<readonly T[]> {
   return () => Promise.all(tasks.map(tToPromise));
 }
 
+// export function teParallel<E, T>(
+//   tasks: readonly Task<Either<E, T>>[]
+// ): Task<Either<E, readonly T[]>> {
+//   return tParallel((tasks));
+// }
+
 export function doTaskEffect<T>(effect: (t: T) => void): Identity<Task<T>> {
   return (t) => {
     tToPromise(t);

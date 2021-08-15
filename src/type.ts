@@ -46,7 +46,7 @@ export type PSignOutError = { readonly _errorType: 'PSignOutError' };
 /**
  *
  */
-export type PSignOut<E extends PSignOutError> = () => Either<E, Promise<void>>;
+export type PSignOut<E extends PSignOutError> = () => Either<E, Task<void>>;
 
 /**
  *
@@ -58,7 +58,7 @@ export type PSignInError = { readonly _errorType: 'PSignInError' };
  */
 export type PSignIn<E extends PSignInError, SIO = unknown, UC = unknown> = (
   sio: SIO
-) => Either<E, Promise<UC>>;
+) => Either<E, Task<UC>>;
 
 /**
  *
@@ -89,7 +89,7 @@ export type PGetNewDocIdError = { readonly _errorType: 'PGetNewDocIdError' };
  */
 export type PGetNewDocId<E extends PGetNewDocIdError = PGetNewDocIdError> = (p: {
   readonly col: string;
-}) => Promise<Either<E, string>>;
+}) => Task<Either<E, string>>;
 
 /**
  *
@@ -103,7 +103,7 @@ export type PSetDoc<E extends PSetDocError = PSetDocError, R = unknown> = (param
   readonly doc: Doc;
   readonly key: DocKey;
   readonly spec: Spec;
-}) => Promise<Either<E, R>>;
+}) => Task<Either<E, R>>;
 
 /**
  *
@@ -134,7 +134,7 @@ export type PQuery<E extends PQueryError, DBC = unknown> = (param: {
   readonly col: string;
   readonly key: QueryKey;
   readonly latestCursor?: DBC;
-}) => Promise<Either<E, PQueryResult<DBC>>>;
+}) => Task<Either<E, PQueryResult<DBC>>>;
 
 /**
  *
@@ -411,7 +411,7 @@ export type CToFieldError = { readonly _errorType: 'CToFieldError' };
 export type CToField<E extends CToFieldError = CToFieldError> = (param: {
   readonly context: CToFieldContext;
   readonly fieldSpec: FieldSpec;
-}) => Promise<Either<E, Option<Field>>>;
+}) => Task<Either<E, Option<Field>>>;
 
 /**
  * InvalidCreationFieldTypeError
@@ -499,7 +499,7 @@ export type CreateDoc<
   readonly cDoc: CDoc;
   readonly col: string;
   readonly id: Option<string>;
-}) => Promise<Either<CreateDocError<CFTE, PGNDI, PSDE>, CreateDocResult>>;
+}) => Task<Either<CreateDocError<CFTE, PGNDI, PSDE>, CreateDocResult>>;
 
 /**
  *
