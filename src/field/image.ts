@@ -1,12 +1,11 @@
 import { ImageField, ImageFieldSpec, isImageFieldValue } from 'kira-core';
-import { Either, eitherFold, Left, optionFold, Right, Some } from 'trimop';
+import { Either, Left, Option, optionFold, Right, Some } from 'trimop';
 
+import { _, eMapC, eMapLeft, leftTo, oMap, oToSome, Task, tMapC } from '../trimop/pipe';
 import {
-  AuthContext,
   CToFieldContext,
   CToFieldError,
   CToFieldUploadImageError,
-  GetAuthState,
   InvalidTypeCToFieldError,
   InvalidTypeRToDocError,
   PUploadImage,
@@ -15,67 +14,48 @@ import {
   RToFieldContext,
 } from '../type';
 
-export async function cToImageField<PUIE extends PUploadImageError>({
+export function cToImageField<PUIE extends PUploadImageError>({
   context: { fieldName, id, col, field },
-  getAuthState,
   pUploadImage,
 }: {
   readonly context: CToFieldContext;
   readonly fieldSpec: ImageFieldSpec;
-  readonly getAuthState: GetAuthState;
   readonly pUploadImage: PUploadImage<PUIE>;
-}): Promise<Either<CToFieldError, Some<ImageField>>> {
-  return optionFold(
-    field,
-    async () =>
-      Left(
-        InvalidTypeCToFieldError({
-          col,
-          field,
-          fieldName,
-          message: 'empty',
-        })
-      ),
-    async (field) => {
-      if (typeof field === 'string') {
-        return Right(Some(ImageField({ url: field })));
-      }
-
-      if (field instanceof File) {
-        return eitherFold(
-          await pUploadImage({
-            auth: optionFold(
-              getAuthState(),
-              () => ({ state: 'signedOut' } as AuthContext),
-              (auth) =>
-                auth.state === 'signedIn' || auth.state === 'loadingUserData'
-                  ? { id: auth.userId, state: 'signedIn' }
-                  : { state: 'signedOut' }
-            ),
-            col,
-            fieldName,
-            file: field,
-            id,
-          }),
-          (pUploadImageError) =>
-            Left(CToFieldUploadImageError(pUploadImageError)) as Either<
-              CToFieldError,
-              Some<ImageField>
-            >,
-          ({ downloadUrl }) => Right(Some(ImageField({ url: downloadUrl })))
-        );
-      }
-
-      return Left(
-        InvalidTypeCToFieldError({
-          col,
-          field,
-          fieldName,
-          message: 'wrong type',
-        })
-      );
-    }
-  );
+}): Task<Either<CToFieldError, Some<ImageField>>> {
+  return _(field)
+    ._<Option<Task<Either<CToFieldError, Some<ImageField>>>>>(
+      oMap((field) =>
+        typeof field === 'string'
+          ? _({ url: field })._(ImageField)._(Some)._(Right)._(Task).eval()
+          : field instanceof File
+          ? _({ col, fieldName, file: field, id })
+              ._(pUploadImage)
+              ._(
+                tMapC((res) =>
+                  res
+                    ._(eMapC(({ downloadUrl }) => _({ url: downloadUrl })._(ImageField)._(Some)))
+                    ._(eMapLeft(leftTo(CToFieldUploadImageError)))
+                )
+              )
+              .eval()
+          : _({
+              col,
+              field,
+              fieldName,
+              message: 'wrong type',
+            })
+              ._(InvalidTypeCToFieldError)
+              ._(Left)
+              ._(Task)
+              .eval()
+      )
+    )
+    ._(
+      oToSome<Task<Either<CToFieldError, Some<ImageField>>>>(() =>
+        Task(Left(InvalidTypeCToFieldError({ col, field, fieldName })))
+      )
+    )
+    .eval();
 }
 
 export function rToImageField({

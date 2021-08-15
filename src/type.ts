@@ -149,25 +149,12 @@ export type PUploadImageError = { readonly _errorType: 'PUploadImageError' };
 /**
  *
  */
-export type AuthContext =
-  | {
-      readonly id: string;
-      readonly state: 'signedIn';
-    }
-  | {
-      readonly state: 'signedOut';
-    };
-
-/**
- *
- */
 export type PUploadImage<E extends PUploadImageError> = (args: {
-  readonly auth: AuthContext;
   readonly col: string;
   readonly fieldName: string;
   readonly file: File;
   readonly id: string;
-}) => Promise<Either<E, PUploadImageResult>>;
+}) => Task<Either<E, PUploadImageResult>>;
 
 /**
  *

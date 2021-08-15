@@ -8,8 +8,18 @@ import {
   optionFromNullable,
   Right,
 } from 'trimop';
-import { _ } from '../../trimop/pipe';
 
+import {
+  _,
+  dLookup,
+  dMapC,
+  eMap,
+  oMapC,
+  oToSomeC,
+  Task,
+  tMapC,
+  tParallel,
+} from '../../trimop/pipe';
 import {
   CField,
   CreateDoc,
@@ -39,22 +49,38 @@ export function buildCreateDoc<
   readonly spec: Spec;
 }): CreateDoc<CFTE, PSDE, PGNDI> {
   return ({ cDoc, col, id: givenId }) => {
-    //   _(spec)
-    //     ._(dLookup(col))
-    //     ._(
-    //       oMap((colSpec) =>
-    //         _(givenId)
-    //           ._(oMapC((t) => t._(Right)._(toTask)))
-    //           ._(
-    //             oToSomeC(() =>
-    //               _({ col })
-    //                 ._(pGetNewDocId)
-    //                 ._((x) => x)
+    // _(spec)
+    //   ._(dLookup(col))
+    //   ._(
+    //     oMapC((colSpec) =>
+    //       _(givenId)
+    //         ._(oMapC((t) => t._(Right)._(Task)))
+    //         ._(oToSomeC(() => _({ col })._(pGetNewDocId)))
+    //         ._(
+    //           tMapC((id) =>
+    //             id._(
+    //               eMap((id) =>
+    //                 colSpec
+    //                   ._(
+    //                     dMapC((fieldSpec, fieldName) =>
+    //                       _(cDoc)
+    //                         ._(dLookup(fieldName))
+    //                         ._((field) =>
+    //                           cToField({
+    //                             context: { col, field, fieldName, id },
+    //                             fieldSpec,
+    //                           })
+    //                         )
+    //                     )
+    //                   )
+    //                   ._(tParallel)._()
+    //               )
     //             )
     //           )
-    //           .eval()
-    //       )
-    //     );
+    //         )
+    //     )
+    //   )
+    //   .eval();
     return optionFold(
       optionFromNullable(spec[col]),
       async () => Left(UnknownCollectionNameError({ col })),

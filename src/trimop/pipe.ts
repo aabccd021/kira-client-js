@@ -1,3 +1,4 @@
+/* eslint-disable import/exports-last */
 import { Either, isLeft, isNone, isRight, Left, None, Option, Right, Some } from 'trimop';
 
 export type C<T> = {
@@ -19,9 +20,24 @@ export function _<T>(t: T): C<T> {
   };
 }
 
-export function c<TR, T>(m: C<(t: T) => TR>): (t: T) => TR {
-  return (t) => m.eval()(t);
-}
+// export type Z<TR, T> = {
+//   readonly _: <TR2>(mapper: (t: TR) => TR2) => Z<TR, T>;
+//   readonly eval: (t: T) => TR;
+// };
+
+// export function ZZ<TR, T>(mapper: (t: T) => TR): Z<TR, T> {
+//   return {
+//     _: mapper,
+//     eval: mapper,
+//   };
+// }
+
+// ZZ
+// (eMap<boolean, string, number>((num) => num !== 0))._(eMapLeft((x) => Left(x.left.length))).eval;
+
+// export function c<TR, T>(m: C<(t: T) => TR>): (t: T) => TR {
+//   return (t) => m.eval()(t);
+// }
 
 export type LeftTo<EResult, E> = (l: Left<E>) => Left<EResult>;
 
@@ -108,12 +124,16 @@ export function eMap<TResult, E, T>(mapper: (t: T) => TResult): EMap<TResult, E,
   return (either) => (isLeft(either) ? either : Right(mapper(either.right)));
 }
 
+export function eMapC<TResult, E, T>(mapper: (t: T) => C<TResult>): EMap<TResult, E, T> {
+  return (either) => (isLeft(either) ? either : Right(mapper(either.right).eval()));
+}
+
 export function oMap<TResult, T>(mapper: (t: T) => TResult): OMap<TResult, T> {
   return (option) => (isNone(option) ? option : Some(mapper(option.value)));
 }
 
-export function oMapC<TResult, T>(mapper: (t: C<T>) => C<TResult>): OMap<TResult, T> {
-  return (option) => (isNone(option) ? option : Some(mapper(_(option.value)).eval()));
+export function oMapC<TResult, T>(mapper: (t: T) => C<TResult>): OMap<TResult, T> {
+  return (option) => (isNone(option) ? option : Some(mapper(option.value).eval()));
 }
 
 export function oFrom<T>(t: NonNullable<T> | undefined | null): Option<T> {
@@ -121,9 +141,7 @@ export function oFrom<T>(t: NonNullable<T> | undefined | null): Option<T> {
   return t === undefined || t === null ? None() : Some(t);
 }
 
-
-
-export function toTask<T>(t: T): Task<T> {
+export function Task<T>(t: T): Task<T> {
   return () => Promise.resolve(t);
 }
 
@@ -137,6 +155,10 @@ export function tMap<TResult, T>(mapper: (t: T) => TResult): TMap<TResult, T> {
 
 export function tMapC<TResult, T>(mapper: (t: C<T>) => C<TResult>): TMap<TResult, T> {
   return (task) => () => tToPromise(task).then((t) => mapper(_(t)).eval());
+}
+
+export function tParallel<T>(tasks: readonly Task<T>[]): Task<readonly T[]> {
+  return () => Promise.all(tasks.map(tToPromise));
 }
 
 export function leftTo<EResult, E>(mapper: (t: E) => EResult): LeftTo<EResult, E> {
@@ -162,4 +184,20 @@ export type DLookup<T> = (dict: Dict<T>) => Option<T>;
 
 export function dLookup<T>(key: string): DLookup<T> {
   return (dict) => oFrom(dict[key]);
+}
+
+export type DMap<TR, T> = (dict: Dict<T>) => readonly TR[];
+
+export function dMap<TR, T>(
+  mapper: (field: T, fieldName: string, index: number) => TR
+): DMap<TR, T> {
+  return (dict) =>
+    Object.entries(dict).map(([fieldName, field], index) => mapper(field, fieldName, index));
+}
+
+export function dMapC<TR, T>(
+  mapper: (field: T, fieldName: string, index: number) => C<TR>
+): DMap<TR, T> {
+  return (dict) =>
+    Object.entries(dict).map(([fieldName, field], index) => mapper(field, fieldName, index).eval());
 }
