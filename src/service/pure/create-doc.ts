@@ -20,7 +20,7 @@ import {
   PSetDoc,
   PSetDocError,
   UnknownCollectionNameError,
-} from '../type';
+} from '../../type';
 
 export function buildCreateDoc<
   CFTE extends CToFieldError,

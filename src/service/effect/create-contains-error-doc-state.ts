@@ -1,23 +1,18 @@
-import { DocKey, Spec } from 'kira-core';
+import { Spec } from 'kira-core';
 import { BuildDraft } from 'kira-nosql';
-import { Left } from 'trimop';
 
-import { buildInitialFetchDoc } from '..';
 import {
   ContainsErrorDocState,
+  CreateContainsErrorDocState,
   CToField,
-  DocState,
-  DocStateError,
   DocToR,
   PGetNewDocId,
   PReadDoc,
   PSetDoc,
   RToDoc,
-} from '../type';
-
-export type CreateContainsErrorDocState<DSE extends DocStateError = DocStateError> = (
-  key: DocKey
-) => (left: Left<DSE>) => DocState;
+} from '../../type';
+// eslint-disable-next-line import/no-cycle
+import { buildInitialFetchDoc } from './initial-fetch-doc';
 
 export function buildCreateContainsErrorDocState({
   buildDraft,

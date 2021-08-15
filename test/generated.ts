@@ -1,16 +1,14 @@
 /* eslint-disable import/exports-last */
 /* eslint-disable no-use-before-define */
-import { DocKey, Spec } from 'kira-core';
+import { Spec } from 'kira-core';
 import { buildCountDraft, buildCreationTimeDraft, BuildDraft, buildRefDraft } from 'kira-nosql';
 import { Left, None } from 'trimop';
 
 import {
   buildCreateDoc,
-  buildInitialFetchDoc,
   buildMakeDocState,
   buildRToDoc,
   buildSetDocState,
-  ContainsErrorDocState,
   cToCountField,
   cToCreationTimeField,
   CToField,
@@ -18,7 +16,6 @@ import {
   cToImageField,
   cToRefField,
   cToStringField,
-  DocStateError,
   docToR,
   getAuthState,
   ImageCField,
@@ -40,6 +37,7 @@ import {
   rToStringField,
   StringCField,
 } from '../src';
+import { buildInitialFetchDoc } from '../src/service/effect/initial-fetch-doc';
 
 export const pGetNewDocId = jest.fn<
   ReturnType<PGetNewDocId<PGetNewDocIdError>>,
@@ -193,39 +191,35 @@ const buildDraft: BuildDraft = ({ spec, context }) => {
   return None();
 };
 
-const setDocState = buildSetDocState({
+export const setDocState = buildSetDocState({
   buildDraft,
   docToR,
   rToDoc,
   spec,
 });
 
-const createDoc = buildCreateDoc({
+export const createDoc = buildCreateDoc({
   cToField,
-  docToR,
+  spec,
   pGetNewDocId,
   pSetDoc,
-  setDocState,
-  spec,
 });
 
 const initialFetchDoc = buildInitialFetchDoc({
-  createDoc,
+  buildDraft,
+  cToField,
   docToR,
+  pGetNewDocId,
   pReadDoc,
-  setDocState,
+  pSetDoc,
+  rToDoc,
+  spec,
 });
 
 export const makeDocState = buildMakeDocState({
   initialFetchDoc,
 });
 
-function z<T extends DocStateError>(key: DocKey, e: T): ContainsErrorDocState<T> {
-  return ContainsErrorDocState({
-    error: Left(e),
-    revalidate: () => initialFetchDoc(key),
-  });
-}
 
 export type MemeCDoc = {
   memeImage: MemeImageDoc & { _id: string };

@@ -1,33 +1,9 @@
-import { Spec } from 'kira-core';
-import { BuildDraft } from 'kira-nosql';
-
-import { buildSetDocState, getDocState } from '../listenable/doc';
-import {
-  _,
-  doTaskEffect,
-  eMap,
-  eMapLeft,
-  eToRight,
-  leftTo,
-  oMap,
-  oToSome,
-  tMap,
-  toTask,
-} from '../trimop/pipe';
-import {
-  CToField,
-  DocToR,
-  InitialFetchDoc,
-  PGetNewDocId,
-  PReadDoc,
-  PReadDocDocStateError,
-  PReadDocError,
-  PSetDoc,
-  ReadyDocState,
-  RToDoc,
-} from '../type';
-import { buildCreateContainsErrorDocState } from './set-contains-error-doc-state';
-import { buildCreateNotExistsDocState } from './set-not-exists-doc-state';
+import { Spec } from "kira-core";
+import { BuildDraft } from "kira-nosql";
+import { PReadDocError, CToField, DocToR, PGetNewDocId, PReadDoc, PSetDoc, RToDoc, InitialFetchDoc, buildSetDocState, getDocState, ReadyDocState, PReadDocDocStateError } from "../..";
+import { _, oMap, toTask, oToSomeC, tMapC, eMap, eMapLeft, leftTo, eToRight, doTaskEffect, tToPromise } from "../../trimop/pipe";
+import { buildCreateContainsErrorDocState } from "./create-contains-error-doc-state";
+import { buildCreateNotExistsDocState } from "./create-not-exists-doc-state";
 
 export function buildInitialFetchDoc<PRDE extends PReadDocError>({
   buildDraft,
@@ -76,12 +52,12 @@ export function buildInitialFetchDoc<PRDE extends PReadDocError>({
       ._(getDocState)
       ._(oMap(toTask))
       ._(
-        oToSome(
+        oToSomeC(() =>
           _(key)
             ._(pReadDoc)
             ._(
-              tMap((res) =>
-                _(res)
+              tMapC((res) =>
+                res
                   ._(
                     eMap((remoteDoc) =>
                       remoteDoc.state === 'exists'
@@ -91,11 +67,11 @@ export function buildInitialFetchDoc<PRDE extends PReadDocError>({
                   )
                   ._(eMapLeft(leftTo(PReadDocDocStateError)))
                   ._(eToRight(createContainsErrorDocState(key)))
-                  .eval()
               )
-            ).eval
+            )
         )
       )
-      ._(doTaskEffect((docState) => setDocState(key, docState)))
+      ._(doTaskEffect(setDocState(key)))
+      ._(tToPromise)
       .eval();
 }

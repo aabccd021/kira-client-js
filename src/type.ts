@@ -657,7 +657,7 @@ export type SetDocState<
   E extends DocStateError = DocStateError,
   R extends RDoc = RDoc,
   C extends CDoc = CDoc
-> = (key: DocKey, newDocState: DocState<E, R, C>) => void;
+> = (key: DocKey) => (newDocState: DocState<E, R, C>) => void;
 
 /**
  *
@@ -761,3 +761,15 @@ export type GetAuthState = () => Option<AuthState>;
  *
  */
 export type MakeDocState = (key: DocKey) => State<DocState>;
+
+/**
+ *
+ */
+export type CreateNotExistsDocState = (key: DocKey) => NotExistsDocState;
+
+/**
+ *
+ */
+export type CreateContainsErrorDocState<DSE extends DocStateError = DocStateError> = (
+  key: DocKey
+) => (left: Left<DSE>) => DocState;

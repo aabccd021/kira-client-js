@@ -1,22 +1,26 @@
 import { Either, isLeft, isNone, isRight, Left, Option, Right, Some } from 'trimop';
 
-export type Chainable<T> = {
-  readonly _: <TResult>(mapper: (t: T) => TResult) => Chainable<TResult>;
+export type C<T> = {
+  readonly _: <TResult>(mapper: (t: T) => TResult) => C<TResult>;
   readonly eval: () => T;
 };
 
-export function Chainable<T>(t: () => T): Chainable<T> {
+export function Chainable<T>(t: () => T): C<T> {
   return {
     _: (mapper) => Chainable(() => mapper(t())),
     eval: t,
   };
 }
 
-export function _<T>(t: T): Chainable<T> {
+export function _<T>(t: T): C<T> {
   return {
     _: (mapper) => Chainable(() => mapper(t)),
     eval: () => t,
   };
+}
+
+export function c<TR, T>(m: C<(t: T) => TR>): (t: T) => TR {
+  return (t) => m.eval()(t);
 }
 
 export type LeftTo<EResult, E> = (l: Left<E>) => Left<EResult>;
@@ -90,6 +94,10 @@ export function oToSome<T>(mapper: () => T): OFold<T, T> {
   return (option) => (isNone(option) ? mapper() : option.value);
 }
 
+export function oToSomeC<T>(mapper: () => C<T>): OFold<T, T> {
+  return (option) => (isNone(option) ? mapper().eval() : option.value);
+}
+
 export function eMapLeft<EResult, E, T>(
   mapper: (l: Left<E>) => Left<EResult>
 ): EMapLeft<EResult, E, T> {
@@ -114,6 +122,10 @@ export function tToPromise<T>(task: Task<T>): Promise<T> {
 
 export function tMap<TResult, T>(mapper: (t: T) => TResult): TMap<TResult, T> {
   return (task) => () => tToPromise(task).then(mapper);
+}
+
+export function tMapC<TResult, T>(mapper: (t: C<T>) => C<TResult>): TMap<TResult, T> {
+  return (task) => () => tToPromise(task).then((t) => mapper(_(t)).eval());
 }
 
 export function leftTo<EResult, E>(mapper: (t: E) => EResult): LeftTo<EResult, E> {

@@ -8,7 +8,7 @@ export * from './kv';
 export * from './listenable/auth';
 export * from './listenable/doc';
 export * from './r-to-doc';
-export * from './service/create-doc';
+export * from './service/pure/create-doc';
 export * from './service/initial-fetch-doc';
 export * from './state/doc';
 export * from './type';

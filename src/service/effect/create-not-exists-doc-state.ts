@@ -1,24 +1,10 @@
-import { DocKey, Spec } from 'kira-core';
-import { BuildDraft } from 'kira-nosql';
-import { Some } from 'trimop';
+import { Spec } from "kira-core";
+import { BuildDraft } from "kira-nosql";
+import { Some } from "trimop";
+import { NotExistsDocState, CToField, DocToR, PGetNewDocId, PReadDoc, PSetDoc, RToDoc, buildSetDocState, buildCreateDoc, CreatingDocState, ReadyDocState, CreateDocDocStateError, CreateNotExistsDocState } from "../..";
+import { _, eMap, eMapLeft, leftTo, eToRight, doEffect } from "../../trimop/pipe";
+import { buildCreateContainsErrorDocState } from "./create-contains-error-doc-state";
 
-import { DocToR, PSetDoc } from '..';
-import { buildSetDocState } from '../listenable/doc';
-import { _, doEffect, eMap, eMapLeft, eToRight, leftTo } from '../trimop/pipe';
-import {
-  CreateDocDocStateError,
-  CreatingDocState,
-  CToField,
-  NotExistsDocState,
-  PGetNewDocId,
-  PReadDoc,
-  ReadyDocState,
-  RToDoc,
-} from '../type';
-import { buildCreateDoc } from './create-doc';
-import { buildCreateContainsErrorDocState } from './set-contains-error-doc-state';
-
-export type CreateNotExistsDocState = (key: DocKey) => NotExistsDocState;
 
 export function buildCreateNotExistsDocState({
   buildDraft,
@@ -59,7 +45,7 @@ export function buildCreateNotExistsDocState({
   return (key) =>
     NotExistsDocState({
       create: (cDoc) => {
-        setDocState(key, CreatingDocState());
+        setDocState(key)(CreatingDocState());
         createDoc({
           cDoc,
           col: key.col,
@@ -70,7 +56,7 @@ export function buildCreateNotExistsDocState({
             ._(eMap(ReadyDocState))
             ._(eMapLeft(leftTo(CreateDocDocStateError)))
             ._(eToRight(createContainsErrorDocState(key)))
-            ._(doEffect((docState) => setDocState(key, docState)))
+            ._(doEffect(setDocState(key)))
             .eval()
         );
       },

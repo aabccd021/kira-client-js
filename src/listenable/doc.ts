@@ -187,7 +187,7 @@ export function buildSetDocState({
   readonly rToDoc: RToDoc;
   readonly spec: Spec;
 }): SetDocState {
-  return (key, newDocState) => {
+  return (key) => (newDocState) => {
     const oldState = _getDocState(key);
     _setDocState(key, newDocState);
     if (newDocState.state === 'Ready') {
