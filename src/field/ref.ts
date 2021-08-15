@@ -1,7 +1,6 @@
 import { isImageFieldValue, RefField, RefFieldSpec } from 'kira-core';
 import {
   Either,
-  eitherFold,
   eitherMapRight,
   Left,
   Option,
@@ -11,6 +10,7 @@ import {
   Some,
 } from 'trimop';
 
+import { _, eMap, eMapLeft, leftTo, oMap, oToSome, Task } from '../trimop/pipe';
 import {
   CField,
   CToFieldContext,
@@ -44,7 +44,8 @@ function isRefRField(field: RField | CField | undefined): field is RefRField {
   );
 }
 
-export async function cToRefField({
+//TODO: Owner field for better tree shaking
+export function cToRefField({
   context: { fieldName, col, field },
   fieldSpec,
   getAuthState,
@@ -54,71 +55,61 @@ export async function cToRefField({
   readonly fieldSpec: RefFieldSpec;
   readonly getAuthState: GetAuthState;
   readonly rToDoc: RToDoc;
-}): Promise<Either<CToFieldError, Option<RefField>>> {
-  return optionFold(
-    field,
-    async () =>
-      Left(
-        InvalidTypeCToFieldError({
-          col,
-          field,
-          fieldName,
-        })
-      ),
-    async (rDoc) => {
-      if (fieldSpec.isOwner) {
-        return optionFold(
-          getAuthState(),
-          () => Left(CToFieldUserNotSignedInError({ signInRequired: `create ${col} doc` })),
-          (auth) =>
-            auth.state === 'signedIn'
-              ? eitherFold(
-                  rToDoc(col, auth.user),
-                  (left) =>
-                    Left(CToFieldRToDocError(left)) as Either<CToFieldError, Option<RefField>>,
-                  (doc) =>
-                    Right(
-                      optionMapSome(doc, (doc) =>
-                        Some(
-                          RefField({
-                            doc,
-                            id: auth.userId,
-                          })
+}): Task<Either<CToFieldError, Option<RefField>>> {
+  return _(field)
+    ._(
+      oMap((rDoc) =>
+        fieldSpec.isOwner
+          ? _(getAuthState())
+              ._(
+                oMap((auth) =>
+                  auth.state === 'signedIn'
+                    ? _(rToDoc(col, auth.user))
+                        ._(
+                          eMap((doc) =>
+                            _(doc)
+                              ._(oMap((doc) => RefField({ doc, id: auth.userId })))
+                              .eval()
+                          )
                         )
-                      )
-                    )
-                )
-              : Left(CToFieldUserNotSignedInError({ signInRequired: `create ${col} doc` }))
-        );
-      }
-      return isRefRField(rDoc)
-        ? eitherFold(
-            rToDoc(col, rDoc),
-            (left) => {
-              console.log('bingo', { rDoc });
-              return Left(CToFieldRToDocError(left)) as Either<CToFieldError, Option<RefField>>;
-            },
-            (doc) =>
-              Right(
-                optionMapSome(doc, (doc) =>
-                  Some(
-                    RefField({
-                      doc,
-                      id: rDoc._id,
-                    })
-                  )
+                        ._(eMapLeft(leftTo(CToFieldRToDocError)))
+                        .eval()
+                    : _(CToFieldUserNotSignedInError({ signInRequired: `create ${col} doc` }))
+                        ._(Left)
+                        .eval()
                 )
               )
-          )
-        : Left(
-            InvalidTypeCToFieldError({
-              col,
-              field: rDoc,
-              fieldName,
-            })
-          );
-    }
-  );
+              ._(
+                oToSome<Either<CToFieldError, Option<RefField>>>(() =>
+                  _(CToFieldUserNotSignedInError({ signInRequired: `create ${col} doc` }))
+                    ._(Left)
+                    .eval()
+                )
+              )
+              .eval()
+          : isRefRField(rDoc)
+          ? _(rToDoc(col, rDoc))
+              ._(
+                eMap((doc) =>
+                  _(doc)
+                    ._(oMap((doc) => RefField({ doc, id: rDoc._id })))
+                    .eval()
+                )
+              )
+              ._(eMapLeft(leftTo(CToFieldRToDocError)))
+              .eval()
+          : _(InvalidTypeCToFieldError({ col, field: rDoc, fieldName }))
+              ._(Left)
+              .eval()
+      )
+    )
+    ._(
+      oToSome<Either<CToFieldError, Option<RefField>>>(() =>
+        _(InvalidTypeCToFieldError({ col, field, fieldName }))._(Left).eval()
+      )
+    )
+    ._(Task)
+    .eval();
 }
 
 export function rToRefField({

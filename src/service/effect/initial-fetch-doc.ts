@@ -1,7 +1,7 @@
 import { Spec } from "kira-core";
 import { BuildDraft } from "kira-nosql";
 import { PReadDocError, CToField, DocToR, PGetNewDocId, PReadDoc, PSetDoc, RToDoc, InitialFetchDoc, buildSetDocState, getDocState, ReadyDocState, PReadDocDocStateError } from "../..";
-import { _, oMap, Task, oToSomeC, tMapC, eMap, eMapLeft, leftTo, eToRight, doTaskEffect, tToPromise } from "../../trimop/pipe";
+import { _, oMap, Task,  eMap, eMapLeft, leftTo, eToRight, doTaskEffect, tToPromise, oToSome, tMap } from "../../trimop/pipe";
 import { buildCreateContainsErrorDocState } from "./create-contains-error-doc-state";
 import { buildCreateNotExistsDocState } from "./create-not-exists-doc-state";
 
@@ -52,12 +52,12 @@ export function buildInitialFetchDoc<PRDE extends PReadDocError>({
       ._(getDocState)
       ._(oMap(Task))
       ._(
-        oToSomeC(() =>
+        oToSome(() =>
           _(key)
             ._(pReadDoc)
             ._(
-              tMapC((res) =>
-                res
+              tMap((res) =>
+                _(res)
                   ._(
                     eMap((remoteDoc) =>
                       remoteDoc.state === 'exists'
@@ -66,9 +66,9 @@ export function buildInitialFetchDoc<PRDE extends PReadDocError>({
                     )
                   )
                   ._(eMapLeft(leftTo(PReadDocDocStateError)))
-                  ._(eToRight(createContainsErrorDocState(key)))
+                  ._(eToRight(createContainsErrorDocState(key))).eval()
               )
-            )
+            ).eval()
         )
       )
       ._(doTaskEffect(setDocState(key)))

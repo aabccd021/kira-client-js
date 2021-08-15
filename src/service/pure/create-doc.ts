@@ -10,17 +10,6 @@ import {
 } from 'trimop';
 
 import {
-  _,
-  dLookup,
-  dMapC,
-  eMap,
-  oMapC,
-  oToSomeC,
-  Task,
-  tMapC,
-  tParallel,
-} from '../../trimop/pipe';
-import {
   CField,
   CreateDoc,
   CreateDocResult,

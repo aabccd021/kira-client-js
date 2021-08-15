@@ -110,10 +110,6 @@ export function oToSome<T>(mapper: () => T): OFold<T, T> {
   return (option) => (isNone(option) ? mapper() : option.value);
 }
 
-export function oToSomeC<T>(mapper: () => C<T>): OFold<T, T> {
-  return (option) => (isNone(option) ? mapper().eval() : option.value);
-}
-
 export function eMapLeft<EResult, E, T>(
   mapper: (l: Left<E>) => Left<EResult>
 ): EMapLeft<EResult, E, T> {
@@ -124,16 +120,8 @@ export function eMap<TResult, E, T>(mapper: (t: T) => TResult): EMap<TResult, E,
   return (either) => (isLeft(either) ? either : Right(mapper(either.right)));
 }
 
-export function eMapC<TResult, E, T>(mapper: (t: T) => C<TResult>): EMap<TResult, E, T> {
-  return (either) => (isLeft(either) ? either : Right(mapper(either.right).eval()));
-}
-
 export function oMap<TResult, T>(mapper: (t: T) => TResult): OMap<TResult, T> {
   return (option) => (isNone(option) ? option : Some(mapper(option.value)));
-}
-
-export function oMapC<TResult, T>(mapper: (t: T) => C<TResult>): OMap<TResult, T> {
-  return (option) => (isNone(option) ? option : Some(mapper(option.value).eval()));
 }
 
 export function oFrom<T>(t: NonNullable<T> | undefined | null): Option<T> {
@@ -151,10 +139,6 @@ export function tToPromise<T>(task: Task<T>): Promise<T> {
 
 export function tMap<TResult, T>(mapper: (t: T) => TResult): TMap<TResult, T> {
   return (task) => () => tToPromise(task).then(mapper);
-}
-
-export function tMapC<TResult, T>(mapper: (t: C<T>) => C<TResult>): TMap<TResult, T> {
-  return (task) => () => tToPromise(task).then((t) => mapper(_(t)).eval());
 }
 
 export function tParallel<T>(tasks: readonly Task<T>[]): Task<readonly T[]> {
@@ -195,9 +179,14 @@ export function dMap<TR, T>(
     Object.entries(dict).map(([fieldName, field], index) => mapper(field, fieldName, index));
 }
 
-export function dMapC<TR, T>(
-  mapper: (field: T, fieldName: string, index: number) => C<TR>
-): DMap<TR, T> {
-  return (dict) =>
-    Object.entries(dict).map(([fieldName, field], index) => mapper(field, fieldName, index).eval());
+export function toTaskRight<T>(t: T): Task<Right<T>> {
+  return _(t)._(Right)._(Task).eval();
+}
+
+export function toTaskRightSome<T>(t: T): Task<Right<Some<T>>> {
+  return _(t)._(Some)._(toTaskRight).eval();
+}
+
+export function toTaskLeft<T>(t: T): Task<Left<T>> {
+  return _(t)._(Left)._(Task).eval();
 }

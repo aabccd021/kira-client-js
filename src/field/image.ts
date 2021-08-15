@@ -1,7 +1,18 @@
 import { ImageField, ImageFieldSpec, isImageFieldValue } from 'kira-core';
-import { Either, Left, Option, optionFold, Right, Some } from 'trimop';
+import { Either, Left, optionFold, Right, Some } from 'trimop';
 
-import { _, eMapC, eMapLeft, leftTo, oMap, oToSome, Task, tMapC } from '../trimop/pipe';
+import {
+  _,
+  eMap,
+  eMapLeft,
+  leftTo,
+  oMap,
+  oToSome,
+  Task,
+  tMap,
+  toTaskLeft,
+  toTaskRightSome,
+} from '../trimop/pipe';
 import {
   CToFieldContext,
   CToFieldError,
@@ -23,36 +34,35 @@ export function cToImageField<PUIE extends PUploadImageError>({
   readonly pUploadImage: PUploadImage<PUIE>;
 }): Task<Either<CToFieldError, Some<ImageField>>> {
   return _(field)
-    ._<Option<Task<Either<CToFieldError, Some<ImageField>>>>>(
+    ._(
       oMap((field) =>
         typeof field === 'string'
-          ? _({ url: field })._(ImageField)._(Some)._(Right)._(Task).eval()
+          ? _(ImageField({ url: field }))
+              ._(toTaskRightSome)
+              .eval()
           : field instanceof File
-          ? _({ col, fieldName, file: field, id })
-              ._(pUploadImage)
+          ? _(pUploadImage({ col, fieldName, file: field, id }))
               ._(
-                tMapC((res) =>
-                  res
-                    ._(eMapC(({ downloadUrl }) => _({ url: downloadUrl })._(ImageField)._(Some)))
+                tMap((res) =>
+                  _(res)
+                    ._(
+                      eMap((uploadResult) =>
+                        _(ImageField({ url: uploadResult.downloadUrl }))
+                          ._(Some)
+                          .eval()
+                      )
+                    )
                     ._(eMapLeft(leftTo(CToFieldUploadImageError)))
+                    .eval()
                 )
               )
               .eval()
-          : _({
-              col,
-              field,
-              fieldName,
-              message: 'wrong type',
-            })
-              ._(InvalidTypeCToFieldError)
-              ._(Left)
-              ._(Task)
-              .eval()
+          : _(InvalidTypeCToFieldError({ col, field, fieldName }))._(toTaskLeft).eval()
       )
     )
     ._(
       oToSome<Task<Either<CToFieldError, Some<ImageField>>>>(() =>
-        Task(Left(InvalidTypeCToFieldError({ col, field, fieldName })))
+        _(InvalidTypeCToFieldError({ col, field, fieldName }))._(toTaskLeft).eval()
       )
     )
     .eval();
