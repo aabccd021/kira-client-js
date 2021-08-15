@@ -150,6 +150,10 @@ export function Task<T>(t: T): Task<T> {
   return () => Promise.resolve(t);
 }
 
+export function tFrom<T>(p: Promise<T>): Task<T> {
+  return () => p;
+}
+
 export function tToPromise<T>(task: Task<T>): Promise<T> {
   return task();
 }
@@ -172,7 +176,8 @@ export function leftTo<EResult, E>(mapper: (t: E) => EResult): LeftTo<EResult, E
 
 export function doTaskEffect<T>(effect: (t: T) => void): Identity<Task<T>> {
   return (t) => {
-    return () => tToPromise(t).then(effect).then(t);
+    tToPromise(t);
+    return t;
   };
 }
 
@@ -267,4 +272,33 @@ export function oDo3<A, B, C>(
     }
     return option;
   };
+}
+
+export type TEMap<TResult, E, T> = (task: Task<Either<E, T>>) => Task<Either<E, TResult>>;
+
+export function teMap<TResult, E, T>(mapper: (e: T) => TResult): TEMap<TResult, E, T> {
+  return tMap(eMap(mapper));
+}
+
+export type OEMap<TResult, E, T> = (task: Option<Either<E, T>>) => Option<Either<E, TResult>>;
+
+export function oeMap<TResult, E, T>(mapper: (e: T) => TResult): OEMap<TResult, E, T> {
+  return oMap(eMap(mapper));
+}
+// export function eMap<TResult, E, T>(mapper: (t: T) => TResult): EMap<TResult, E, T> {
+//   return (either) => (isLeft(either) ? either : Right(mapper(either.right)));
+// }
+
+// export type EMapLeft<EResult, E, T> = (either: Either<E, T>) => Either<EResult, T>;
+
+// export function eMapLeft<EResult, E, T>(
+//   mapper: (l: Left<E>) => Left<EResult>
+// ): EMapLeft<EResult, E, T> {
+//   return (either) => (isLeft(either) ? mapper(either) : either);
+// }
+
+export type TEFold<TResult, E, T> = (either: Task<Either<E, T>>) => Task<TResult>;
+
+export function teToRight<E, T>(mapper: (l: Left<E>) => T): TEFold<T, E, T> {
+  return tMap(eToRight(mapper));
 }

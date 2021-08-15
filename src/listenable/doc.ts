@@ -1,25 +1,15 @@
-import { applyDocWrite, ApplyDocWriteError, Doc, DocKey, DocSnapshot, Spec } from 'kira-core';
+import { applyDocWrite, DocKey, DocSnapshot, Spec } from 'kira-core';
 import {
   ActionTrigger,
   BuildDraft,
   ColTrigger,
   DocChange,
+  DraftGetTransactionCommitError,
+  GetDoc,
   getTransactionCommit,
   TriggerSnapshot,
 } from 'kira-nosql';
-import {
-  Either,
-  eitherFold,
-  eitherMapRight,
-  getStateController,
-  isLeft,
-  Left,
-  None,
-  Option,
-  optionFold,
-  Right,
-  Some,
-} from 'trimop';
+import { Either, getStateController, None, Option, Right, Some } from 'trimop';
 
 import { getCachedTrigger } from '../cached';
 import { deleteRecord, getRecord, setRecord, subscribeToRecord } from '../kv';
@@ -28,17 +18,21 @@ import {
   bind,
   bind2,
   dLookup,
+  dMap,
   doEffect,
   eToO,
   oCompact2,
   oCompact3,
   oDo3,
+  oeMap,
   oFlatten,
   oMap,
   oMap2,
   oMap3,
+  oToSome,
   Task,
-  tDo,
+  teMap,
+  tFrom,
   tToPromise,
 } from '../trimop/pipe';
 import {
@@ -101,7 +95,7 @@ function _deleteDocState(key: DocKey): undefined {
   return deleteRecord(dbController, serializeDocKey(key));
 }
 
-async function runTrigger<S extends TriggerSnapshot>({
+function runTrigger<S extends TriggerSnapshot>({
   col,
   snapshot,
   actionTrigger,
@@ -113,51 +107,54 @@ async function runTrigger<S extends TriggerSnapshot>({
   readonly docToR: DocToR;
   readonly rToDoc: RToDoc;
   readonly snapshot: S;
-}): Task<void> {
-  const transactionCommit = await getTransactionCommit({
-    actionTrigger,
-    getDoc: async (key) =>
-      Right(
-        optionFold(
-          _getDocState(key),
-          () => ({}),
-          (docState) => (docState.state === 'Ready' ? rToDoc(col, docState.data) : {})
-        )
-      ),
-    snapshot,
-  });
-
-  // TODO: return left
-  if (isLeft(transactionCommit)) {
-    console.warn('Failed to get transaction commit');
-    return;
-  }
-  Object.entries(transactionCommit.right).forEach(([colName, colDocs]) => {
-    Object.entries(colDocs).forEach(([docId, docCommit]) => {
-      const key: DocKey = { col: colName, id: docId };
-      optionFold(
-        _getDocState(key),
-        () => Right(undefined),
-        (docState) => {
-          return eitherMapRight(
-            docState.state === 'Ready'
-              ? rToDoc(col, docState.data)
-              : (Right(None()) as Either<unknown, Option<Doc>>),
-            (doc) =>
-              eitherFold(
-                applyDocWrite({
-                  doc,
-                  writeDoc: docCommit.writeDoc,
-                }),
-                (left) => Left(left) as Either<ApplyDocWriteError, unknown>,
-                (newDoc) =>
-                  Right(_setDocState(key, ReadyDocState({ data: docToR(newDoc), id: docId })))
-              )
-          );
-        }
-      );
-    });
-  });
+}): Task<Either<DraftGetTransactionCommitError, unknown>> {
+  // TODO: GetDoc = Option<Doc>
+  return _<GetDoc>(async (key) =>
+    _(key)
+      ._(_getDocState)
+      ._(oMap((docState) => (docState.state === 'Ready' ? rToDoc(col, docState.data) : {})))
+      ._(oToSome(() => ({})))
+      ._(Right)
+      .value()
+  )
+    ._((getDoc) => tFrom(getTransactionCommit({ actionTrigger, getDoc, snapshot })))
+    ._(
+      teMap((transactionCommit) =>
+        _(transactionCommit)
+          ._(
+            dMap((colDocs, col) =>
+              _(colDocs)
+                ._(
+                  dMap((docCommit, id) => {
+                    _({ col, id })
+                      ._(_getDocState)
+                      ._(
+                        oMap((docState) =>
+                          docState.state === 'Ready' ? Some(rToDoc(col, docState.data)) : None()
+                        )
+                      )
+                      ._(oFlatten)
+                      ._(oMap(eToO))
+                      ._(oFlatten)
+                      ._(oMap((doc) => applyDocWrite({ doc, writeDoc: docCommit.writeDoc })))
+                      ._(
+                        oeMap((newDoc) =>
+                          _(newDoc)
+                            ._(docToR)
+                            ._((data) => _setDocState({ col, id }, ReadyDocState({ data, id })))
+                            .value()
+                        )
+                      )
+                      .value();
+                  })
+                )
+                .value()
+            )
+          )
+          .value()
+      )
+    )
+    .value();
 }
 
 /**
