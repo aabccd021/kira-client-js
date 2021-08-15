@@ -40,7 +40,7 @@ export function cToImageField<PUIE extends PUploadImageError>({
         typeof field === 'string'
           ? _(ImageField({ url: field }))
               ._(toTaskRightSome)
-              .eval()
+              .value()
           : field instanceof File
           ? _(pUploadImage({ col, fieldName, file: field, id }))
               ._(
@@ -50,23 +50,23 @@ export function cToImageField<PUIE extends PUploadImageError>({
                       eMap((uploadResult) =>
                         _(ImageField({ url: uploadResult.downloadUrl }))
                           ._(Some)
-                          .eval()
+                          .value()
                       )
                     )
                     ._(eMapLeft(leftTo(CToFieldUploadImageError)))
-                    .eval()
+                    .value()
                 )
               )
-              .eval()
-          : _(InvalidTypeCToFieldError({ col, field, fieldName }))._(toTaskLeft).eval()
+              .value()
+          : _(InvalidTypeCToFieldError({ col, field, fieldName }))._(toTaskLeft).value()
       )
     )
     ._(
       oToSome<Task<Either<CToFieldError, Some<ImageField>>>>(() =>
-        _(InvalidTypeCToFieldError({ col, field, fieldName }))._(toTaskLeft).eval()
+        _(InvalidTypeCToFieldError({ col, field, fieldName }))._(toTaskLeft).value()
       )
     )
-    .eval();
+    .value();
 }
 
 export function rToImageField({
@@ -79,14 +79,14 @@ export function rToImageField({
     ._(
       oMap((field) =>
         isImageFieldValue(field)
-          ? _(ImageField(field))._(toRightSome).eval()
-          : _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left).eval()
+          ? _(ImageField(field))._(toRightSome).value()
+          : _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left).value()
       )
     )
     ._(
       oToSome<Either<RToDocError, Some<ImageField>>>(() =>
-        _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left).eval()
+        _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left).value()
       )
     )
-    .eval();
+    .value();
 }

@@ -21,7 +21,7 @@ export function cToCountField({
     ._(oMap(() => Left(InvalidTypeCToFieldError({ col, field, fieldName }))))
     ._(oToSome<Either<CToFieldError, None>>(() => Right(None())))
     ._(Task)
-    .eval();
+    .value();
 }
 
 export function rToCountField({
@@ -34,14 +34,14 @@ export function rToCountField({
     ._(
       oMap((field) =>
         typeof field === 'number'
-          ? _(NumberField(field))._(toRightSome).eval()
-          : _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left).eval()
+          ? _(NumberField(field))._(toRightSome).value()
+          : _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left).value()
       )
     )
     ._(
       oToSome<Either<RToDocError, Some<NumberField>>>(() =>
-        _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left).eval()
+        _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left).value()
       )
     )
-    .eval();
+    .value();
 }

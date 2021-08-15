@@ -60,47 +60,47 @@ export function cToRefField({
                           eMap((doc) =>
                             _(doc)
                               ._(oMap((doc) => RefField({ doc, id: auth.userId })))
-                              .eval()
+                              .value()
                           )
                         )
                         ._(eMapLeft(leftTo(CToFieldRToDocError)))
-                        .eval()
+                        .value()
                     : _(CToFieldUserNotSignedInError({ signInRequired: `create ${col} doc` }))
                         ._(Left)
-                        .eval()
+                        .value()
                 )
               )
               ._(
                 oToSome<Either<CToFieldError, Option<RefField>>>(() =>
                   _(CToFieldUserNotSignedInError({ signInRequired: `create ${col} doc` }))
                     ._(Left)
-                    .eval()
+                    .value()
                 )
               )
-              .eval()
+              .value()
           : isRefRField(rDoc)
           ? _(rToDoc(col, rDoc))
               ._(
                 eMap((doc) =>
                   _(doc)
                     ._(oMap((doc) => RefField({ doc, id: rDoc._id })))
-                    .eval()
+                    .value()
                 )
               )
               ._(eMapLeft(leftTo(CToFieldRToDocError)))
-              .eval()
+              .value()
           : _(InvalidTypeCToFieldError({ col, field: rDoc, fieldName }))
               ._(Left)
-              .eval()
+              .value()
       )
     )
     ._(
       oToSome<Either<CToFieldError, Option<RefField>>>(() =>
-        _(InvalidTypeCToFieldError({ col, field, fieldName }))._(Left).eval()
+        _(InvalidTypeCToFieldError({ col, field, fieldName }))._(Left).value()
       )
     )
     ._(Task)
-    .eval();
+    .value();
 }
 
 export function rToRefField({
@@ -120,17 +120,17 @@ export function rToRefField({
                 eMap((doc) =>
                   _(doc)
                     ._(oMap((doc) => RefField({ doc, id: field._id })))
-                    .eval()
+                    .value()
                 )
               )
-              .eval()
-          : _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left).eval()
+              .value()
+          : _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left).value()
       )
     )
     ._(
       oToSome<Either<RToDocError, Option<RefField>>>(() =>
-        _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left).eval()
+        _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left).value()
       )
     )
-    .eval();
+    .value();
 }

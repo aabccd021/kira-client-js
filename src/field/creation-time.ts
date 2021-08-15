@@ -20,7 +20,7 @@ export async function cToCreationTimeField({
   return _(field)
     ._(oMap(() => Left(InvalidTypeCToFieldError({ col, field, fieldName }))))
     ._(oToSome<Either<CToFieldError, None>>(() => Right(None())))
-    .eval();
+    .value();
 }
 
 export function rToCreationTimeField({
@@ -33,14 +33,14 @@ export function rToCreationTimeField({
     ._(
       oMap((field) =>
         field instanceof Date
-          ? _(DateField(field))._(toRightSome).eval()
-          : _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left).eval()
+          ? _(DateField(field))._(toRightSome).value()
+          : _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left).value()
       )
     )
     ._(
       oToSome<Either<RToDocError, Some<DateField>>>(() =>
-        _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left).eval()
+        _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left).value()
       )
     )
-    .eval();
+    .value();
 }

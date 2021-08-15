@@ -30,7 +30,7 @@ export async function cToStringField({
         Left(InvalidTypeCToFieldError({ col, field, fieldName }))
       )
     )
-    .eval();
+    .value();
 }
 
 export function rToStringField({
@@ -43,14 +43,14 @@ export function rToStringField({
     ._(
       oMap((field) =>
         typeof field === 'string'
-          ? _(StringField(field))._(toRightSome).eval()
-          : _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left).eval()
+          ? _(StringField(field))._(toRightSome).value()
+          : _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left).value()
       )
     )
     ._(
       oToSome<Either<RToDocError, Some<StringField>>>(() =>
-        _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left).eval()
+        _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left).value()
       )
     )
-    .eval();
+    .value();
 }

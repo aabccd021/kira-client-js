@@ -31,5 +31,5 @@ export function getCachedTrigger({
         cachedTrigger.set(Some(trigger));
       })
     )
-    .eval();
+    .value();
 }

@@ -3,20 +3,20 @@ import { Either, isLeft, isNone, isRight, isSome, Left, None, Option, Right, Som
 
 export type C<T> = {
   readonly _: <TResult>(mapper: (t: T) => TResult) => C<TResult>;
-  readonly eval: () => T;
+  readonly value: () => T;
 };
 
 export function Chainable<T>(t: () => T): C<T> {
   return {
     _: (mapper) => Chainable(() => mapper(t())),
-    eval: t,
+    value: t,
   };
 }
 
 export function _<T>(t: T): C<T> {
   return {
     _: (mapper) => Chainable(() => mapper(t)),
-    eval: () => t,
+    value: () => t,
   };
 }
 
@@ -197,19 +197,19 @@ export function dMap<TR, T>(
 }
 
 export function toTaskRight<T>(t: T): Task<Right<T>> {
-  return _(t)._(Right)._(Task).eval();
+  return _(t)._(Right)._(Task).value();
 }
 
 export function toTaskRightSome<T>(t: T): Task<Right<Some<T>>> {
-  return _(t)._(Some)._(toTaskRight).eval();
+  return _(t)._(Some)._(toTaskRight).value();
 }
 
 export function toRightSome<T>(t: T): Right<Some<T>> {
-  return _(t)._(Some)._(Right).eval();
+  return _(t)._(Some)._(Right).value();
 }
 
 export function toTaskLeft<T>(t: T): Task<Left<T>> {
-  return _(t)._(Left)._(Task).eval();
+  return _(t)._(Left)._(Task).value();
 }
 
 export function bind<A, B>(mapper: (b: B) => A): (t: B) => readonly [B, A] {

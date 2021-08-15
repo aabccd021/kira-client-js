@@ -66,12 +66,12 @@ export function buildInitialFetchDoc<PRDE extends PReadDocError>({
                     )
                   )
                   ._(eMapLeft(leftTo(PReadDocDocStateError)))
-                  ._(eToRight(createContainsErrorDocState(key))).eval()
+                  ._(eToRight(createContainsErrorDocState(key))).value()
               )
-            ).eval()
+            ).value()
         )
       )
       ._(doTaskEffect(setDocState(key)))
       ._(tToPromise)
-      .eval();
+      .value();
 }
