@@ -37,7 +37,7 @@ import {
   rToStringField,
   StringCField,
 } from '../src';
-import { buildInitialFetchDoc } from '../src/service/effect/initial-fetch-doc';
+import { buildInitialFetchDoc } from '../src/service/pure/initial-fetch-doc';
 
 export const pGetNewDocId = jest.fn<
   ReturnType<PGetNewDocId<PGetNewDocIdError>>,

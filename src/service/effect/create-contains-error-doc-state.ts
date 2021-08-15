@@ -1,6 +1,8 @@
 import { Spec } from 'kira-core';
 import { BuildDraft } from 'kira-nosql';
 
+import { buildSetDocState, getDocState } from '../../listenable/doc';
+import { _, bind, bind2, tDo, tMap } from '../../trimop/pipe';
 import {
   ContainsErrorDocState,
   CreateContainsErrorDocState,
@@ -12,7 +14,7 @@ import {
   RToDoc,
 } from '../../type';
 // eslint-disable-next-line import/no-cycle
-import { buildInitialFetchDoc } from './initial-fetch-doc';
+import { buildInitialFetchDoc } from '../pure/initial-fetch-doc';
 
 export function buildCreateContainsErrorDocState({
   buildDraft,
@@ -43,9 +45,22 @@ export function buildCreateContainsErrorDocState({
     rToDoc,
     spec,
   });
+
+  const setDocState = buildSetDocState({ buildDraft, docToR, rToDoc, spec });
   return (key) => (error) =>
     ContainsErrorDocState({
       error,
-      revalidate: () => initialFetchDoc(key),
+      revalidate: () => {
+        _(key)
+          ._(bind(getDocState))
+          ._(bind2(initialFetchDoc))
+          ._(([key, __, newDocState]) =>
+            _(newDocState)
+              ._(tMap(setDocState(key)))
+              ._(tDo)
+              .value()
+          )
+          .value();
+      },
     });
 }
