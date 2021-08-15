@@ -160,16 +160,16 @@ export function tFrom<T>(p: Promise<T>): Task<T> {
   return () => p;
 }
 
-export function tToPromise<T>(task: Task<T>): Promise<T> {
+export function tDo<T>(task: Task<T>): Promise<T> {
   return task();
 }
 
 export function tMap<TResult, T>(mapper: (t: T) => TResult): TMap<TResult, T> {
-  return (task) => () => tToPromise(task).then(mapper);
+  return (task) => () => tDo(task).then(mapper);
 }
 
 export function tParallel<T>(tasks: readonly Task<T>[]): Task<readonly T[]> {
-  return () => Promise.all(tasks.map(tToPromise));
+  return () => Promise.all(tasks.map(tDo));
 }
 
 // export function teParallel<E, T>(
@@ -179,10 +179,11 @@ export function tParallel<T>(tasks: readonly Task<T>[]): Task<readonly T[]> {
 // }
 
 export function doTaskEffect<T>(effect: (t: T) => void): Identity<Task<T>> {
-  return (t) => {
-    tToPromise(t);
-    return t;
-  };
+  return (t) => () =>
+    tDo(t).then((res) => {
+      effect(res);
+      return res;
+    });
 }
 
 // eslint-disable-next-line functional/prefer-type-literal

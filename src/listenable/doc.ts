@@ -33,7 +33,7 @@ import {
   Task,
   teMap,
   tFrom,
-  tToPromise,
+  tDo,
 } from '../trimop/pipe';
 import {
   DB,
@@ -240,7 +240,7 @@ export function buildSetDocState({
         )
       )
       ._(oFlatten)
-      ._(oMap((runTrigger) => _(runTrigger)._(tToPromise).value()))
+      ._(oMap((runTrigger) => _(runTrigger)._(tDo).value()))
       .value();
   };
 }

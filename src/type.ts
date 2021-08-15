@@ -649,7 +649,7 @@ export type SetDocState<
 /**
  *
  */
-export type InitialFetchDoc = (key: DocKey) => void;
+export type InitialFetchDoc = (key: DocKey, docState: Option<DocState>) => Task<DocState>;
 
 /**
  *
