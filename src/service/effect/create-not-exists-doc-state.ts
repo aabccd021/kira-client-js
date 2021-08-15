@@ -17,7 +17,7 @@ import {
   ReadyDocState,
   RToDoc,
 } from '../..';
-import { _, doEffect, eMap, eMapLeftTo, eToRight } from '../../trimop/pipe';
+import { _, doEffect, eMap, eMapLeft, eToRight } from '../../trimop/pipe';
 // eslint-disable-next-line import/no-cycle
 import { buildCreateContainsErrorDocState } from './create-contains-error-doc-state';
 
@@ -69,7 +69,7 @@ export function buildCreateNotExistsDocState({
           _(createResult)
             ._(eMap(({ doc, id }) => ({ data: docToR(doc), id })))
             ._(eMap(ReadyDocState))
-            ._(eMapLeftTo(CreateDocDocStateError))
+            ._(eMapLeft(CreateDocDocStateError))
             ._(eToRight(createContainsErrorDocState(key)))
             ._(doEffect(setDocState(key)))
             .value()

@@ -22,7 +22,7 @@ import {
   oToSome,
   Task,
   teMap,
-  teMapLeftTo,
+  teMapLeft,
   teToRight,
   tToPromise,
 } from '../../trimop/pipe';
@@ -91,7 +91,7 @@ export function buildInitialFetchDoc<PRDE extends PReadDocError>({
                   : createNotExistsDocState(key)
               )
             )
-            ._(teMapLeftTo(PReadDocDocStateError))
+            ._(teMapLeft(PReadDocDocStateError))
             ._(teToRight(createContainsErrorDocState(key)))
             .value()
         )

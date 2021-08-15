@@ -135,13 +135,7 @@ export function leftTo<EResult, E>(mapper: (t: E) => EResult): LeftTo<EResult, E
   });
 }
 
-export function eMapLeft<EResult, E, T>(
-  mapper: (l: Left<E>) => Left<EResult>
-): EMapLeft<EResult, E, T> {
-  return (either) => (isLeft(either) ? mapper(either) : either);
-}
-
-export function eMapLeftTo<EResult, E, T>(mapper: (l: E) => EResult): EMapLeft<EResult, E, T> {
+export function eMapLeft<EResult, E, T>(mapper: (l: E) => EResult): EMapLeft<EResult, E, T> {
   return (either) => (isLeft(either) ? leftTo(mapper)(either) : either);
 }
 
@@ -301,18 +295,12 @@ export function oeMap<TResult, E, T>(mapper: (e: T) => TResult): OEMap<TResult, 
 
 export type TEMapLeft<EResult, E, T> = (either: Task<Either<E, T>>) => Task<Either<EResult, T>>;
 
-export function teMapLeft<EResult, E, T>(
-  mapper: (l: Left<E>) => Left<EResult>
-): TEMapLeft<EResult, E, T> {
-  return tMap(eMapLeft(mapper));
-}
-
 export type TEFold<TResult, E, T> = (either: Task<Either<E, T>>) => Task<TResult>;
 
 export function teToRight<E, T>(mapper: (l: Left<E>) => T): TEFold<T, E, T> {
   return tMap(eToRight(mapper));
 }
 
-export function teMapLeftTo<EResult, E, T>(mapper: (l: E) => EResult): TEMapLeft<EResult, E, T> {
-  return tMap(eMapLeftTo(mapper));
+export function teMapLeft<EResult, E, T>(mapper: (l: E) => EResult): TEMapLeft<EResult, E, T> {
+  return tMap(eMapLeft(mapper));
 }
