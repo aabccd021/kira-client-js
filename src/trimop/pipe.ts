@@ -211,3 +211,36 @@ export function toRightSome<T>(t: T): Right<Some<T>> {
 export function toTaskLeft<T>(t: T): Task<Left<T>> {
   return _(t)._(Left)._(Task).eval();
 }
+
+export function bind<A, B>(a: A): (t: B) => readonly [B, A] {
+  return (b) => [b, a];
+}
+
+export function bindL<A, B>(mapper: (b: B) => A): (t: B) => readonly [B, A] {
+  return (b) => [b, mapper(b)];
+}
+
+export function bind2<A, B, C>(a: A): (t: readonly [B, C]) => readonly [B, C, A] {
+  return ([b, c]) => [b, c, a];
+}
+
+export function bindL2<A, B, C>(
+  mapper: (t: readonly [B, C]) => A
+): (t: readonly [B, C]) => readonly [B, C, A] {
+  return ([b, c]) => [b, c, mapper([b, c])];
+}
+
+export type OCompact3<A, B, C> = (
+  t: readonly [Option<A>, Option<B>, Option<C>]
+) => Option<readonly [A, B, C]>;
+
+export function oCompact2<B, A>([b, a]: readonly [Option<B>, Option<A>]): Option<readonly [B, A]> {
+  return isSome(b) && isSome(a) ? Some([b.value, a.value]) : None();
+}
+
+export function oCompact3<B, C, A>([b, c, a]: readonly [Option<B>, Option<C>, Option<A>]): Option<
+  readonly [B, C, A]
+> {
+  const prev = oCompact2([b, c]);
+  return isSome(a) && isSome(prev) ? Some(bind2<A, B, C>(a.value)(prev.value)) : None();
+}

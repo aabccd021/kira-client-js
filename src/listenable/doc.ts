@@ -25,7 +25,7 @@ import {
 
 import { getCached } from '../cached';
 import { deleteRecord, getRecord, setRecord, subscribeToRecord } from '../kv';
-import { _, eToO, oDo, oFlatten, oMap } from '../trimop/pipe';
+import { _, bind2, bindL, eToO, oCompact3, oDo, oFlatten, oMap } from '../trimop/pipe';
 import {
   DB,
   DocState,
@@ -287,38 +287,39 @@ export function deleteDocState({
 }): void {
   const docState = _getDocState(key);
   _deleteDocState(key);
-
   _(docState)
     ._(oMap((docState) => (docState.state === 'Ready' ? Some(docState) : None())))
     ._(oFlatten)
     ._(
-      oMap((docState) =>
+      bindL((docState) =>
+        _(docState)
+          ._(oMap((docState) => _(rToDoc(key.col, docState.data))._(eToO).eval()))
+          ._(oFlatten)
+          ._(oFlatten)
+          .eval()
+      )
+    )
+    ._(
+      bind2(
         _(getColTrigger({ buildDraft, col: key.col, spec }))
           ._(oMap((colTrigger) => colTrigger.onDelete))
           ._(oFlatten)
-          ._(
-            oMap((onColDeleteTrigger) =>
-              _(rToDoc(key.col, docState.data))
-                ._(eToO)
-                ._(oFlatten)
-                ._(
-                  oDo((doc) =>
-                    runTrigger<DocSnapshot>({
-                      actionTrigger: onColDeleteTrigger,
-                      col: key.col,
-                      docToR,
-                      rToDoc,
-                      snapshot: {
-                        doc,
-                        id: docState.id,
-                      },
-                    })
-                  )
-                )
-                .eval()
-            )
-          )
           .eval()
+      )
+    )
+    ._(oCompact3)
+    ._(
+      oDo(([docState, doc, onColDeleteTrigger]) =>
+        runTrigger<DocSnapshot>({
+          actionTrigger: onColDeleteTrigger,
+          col: key.col,
+          docToR,
+          rToDoc,
+          snapshot: {
+            doc,
+            id: docState.id,
+          },
+        })
       )
     )
     .eval();
