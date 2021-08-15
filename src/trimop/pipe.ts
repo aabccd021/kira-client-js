@@ -1,5 +1,5 @@
 /* eslint-disable import/exports-last */
-import { Either, isLeft, isNone, isRight, Left, None, Option, Right, Some } from 'trimop';
+import { Either, isLeft, isNone, isRight, isSome, Left, None, Option, Right, Some } from 'trimop';
 
 export type C<T> = {
   readonly _: <TResult>(mapper: (t: T) => TResult) => C<TResult>;
@@ -76,6 +76,19 @@ export function eDo<E, T>(effect: (t: T) => void): EIdentity<E, T> {
   };
 }
 
+export function oDo<T>(effect: (t: T) => void): OIdentity<T> {
+  return (option) => {
+    if (isSome(option)) {
+      effect(option.value);
+    }
+    return option;
+  };
+}
+
+export function eToO<E, T>(e: Either<E, T>): Option<T> {
+  return isLeft(e) ? None() : Some(e.right);
+}
+
 export function eDoLeft<E, T>(effect: (e: Left<E>) => void): EIdentity<E, T> {
   return (either) => {
     if (isLeft(either)) {
@@ -108,6 +121,10 @@ export function eToRight<E, T>(mapper: (l: Left<E>) => T): EFold<T, E, T> {
 
 export function oToSome<T>(mapper: () => T): OFold<T, T> {
   return (option) => (isNone(option) ? mapper() : option.value);
+}
+
+export function oFlatten<T>(option: Option<Option<T>>): Option<T> {
+  return isNone(option) ? option : option.value;
 }
 
 export function eMapLeft<EResult, E, T>(

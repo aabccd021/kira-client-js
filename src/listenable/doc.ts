@@ -19,14 +19,13 @@ import {
   Option,
   optionFold,
   optionFromNullable,
-  optionMapSome,
   Right,
   Some,
 } from 'trimop';
 
 import { getCached } from '../cached';
 import { deleteRecord, getRecord, setRecord, subscribeToRecord } from '../kv';
-import { _, oMap } from '../trimop/pipe';
+import { _, eToO, oDo, oFlatten, oMap } from '../trimop/pipe';
 import {
   DB,
   DocState,
@@ -289,23 +288,21 @@ export function deleteDocState({
   const docState = _getDocState(key);
   _deleteDocState(key);
 
-  // _(docState)
-  //   ._(oMap((docState) => (docState.state === 'Ready' ? true : false)))
-  //   .eval();
-
-  optionMapSome(docState, (docState) => {
-    if (docState.state === 'Ready') {
-      optionMapSome(getColTrigger({ buildDraft, col: key.col, spec }), (colTrigger) =>
-        optionMapSome(colTrigger.onDelete, (onColDeleteTrigger) =>
-          Some(
-            eitherFold(
-              rToDoc(key.col, docState.data),
-              () => undefined,
-              (doc) =>
-                optionFold(
-                  doc,
-                  () => undefined,
-                  (doc) =>
+  _(docState)
+    ._(oMap((docState) => (docState.state === 'Ready' ? Some(docState) : None())))
+    ._(oFlatten)
+    ._(
+      oMap((docState) =>
+        _(getColTrigger({ buildDraft, col: key.col, spec }))
+          ._(oMap((colTrigger) => colTrigger.onDelete))
+          ._(oFlatten)
+          ._(
+            oMap((onColDeleteTrigger) =>
+              _(rToDoc(key.col, docState.data))
+                ._(eToO)
+                ._(oFlatten)
+                ._(
+                  oDo((doc) =>
                     runTrigger<DocSnapshot>({
                       actionTrigger: onColDeleteTrigger,
                       col: key.col,
@@ -316,14 +313,15 @@ export function deleteDocState({
                         id: docState.id,
                       },
                     })
+                  )
                 )
+                .eval()
             )
           )
-        )
-      );
-    }
-    return Some(undefined);
-  });
+          .eval()
+      )
+    )
+    .eval();
 }
 
 export { _getDocState as getDocState, _subscribeToDocState as subscribeToDocState };

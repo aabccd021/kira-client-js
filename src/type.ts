@@ -606,7 +606,7 @@ export function CreatingDocState(): CreatingDocState {
 /**
  *
  */
-export type ReadyDocState<R extends RDoc> = {
+export type ReadyDocState<R extends RDoc = RDoc> = {
   readonly data: R;
   readonly id: string;
   // readonly revalidate: () => void;
