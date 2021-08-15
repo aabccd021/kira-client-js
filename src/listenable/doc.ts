@@ -5,7 +5,6 @@ import {
   ColTrigger,
   DocChange,
   getTransactionCommit,
-  getTrigger,
   TriggerSnapshot,
 } from 'kira-nosql';
 import {
@@ -18,14 +17,26 @@ import {
   None,
   Option,
   optionFold,
-  optionFromNullable,
   Right,
   Some,
 } from 'trimop';
 
-import { getCached } from '../cached';
+import { getCachedTrigger } from '../cached';
 import { deleteRecord, getRecord, setRecord, subscribeToRecord } from '../kv';
-import { _, bind2, bindL, eToO, oCompact3, oDo, oFlatten, oMap } from '../trimop/pipe';
+import {
+  _,
+  bind,
+  bind2,
+  dLookup,
+  eToO,
+  oCompact2,
+  oCompact3,
+  oDo2,
+  oDo3,
+  oFlatten,
+  oMap,
+  oMap3,
+} from '../trimop/pipe';
 import {
   DB,
   DocState,
@@ -93,16 +104,12 @@ async function runTrigger<S extends TriggerSnapshot>({
   docToR,
   rToDoc,
 }: {
-  readonly actionTrigger: ActionTrigger<S> | undefined;
+  readonly actionTrigger: ActionTrigger<S>;
   readonly col: string;
   readonly docToR: DocToR;
   readonly rToDoc: RToDoc;
   readonly snapshot: S;
 }): Promise<void> {
-  if (actionTrigger === undefined) {
-    return;
-  }
-
   const transactionCommit = await getTransactionCommit({
     actionTrigger,
     getDoc: async (key) =>
@@ -163,12 +170,7 @@ function getColTrigger({
   readonly col: string;
   readonly spec: Spec;
 }): Option<ColTrigger> {
-  return optionFromNullable(
-    getCached({
-      builder: () => getTrigger({ buildDraft, spec }),
-      key: 'trigger',
-    })?.[col]
-  );
+  return _(getCachedTrigger({ buildDraft, spec }))._(dLookup(col)).eval();
 }
 
 /**
@@ -188,83 +190,56 @@ export function buildSetDocState({
   readonly spec: Spec;
 }): SetDocState {
   return (key) => (newDocState) => {
-    const oldState = _getDocState(key);
+    const oldDocState = _getDocState(key);
     _setDocState(key, newDocState);
-    if (newDocState.state === 'Ready') {
-      optionFold(
-        getColTrigger({ buildDraft, col: key.col, spec }),
-        () => undefined,
-        (colTrigger) =>
-          optionFold(
-            oldState,
-            () => undefined,
-            (oldState) => {
-              oldState.state === 'Ready'
-                ? optionFold(
-                    colTrigger.onUpdate,
-                    () => undefined,
-                    (onColDeleteTrigger) =>
-                      eitherFold(
-                        rToDoc(key.col, newDocState.data),
-                        () => undefined,
-                        (after) =>
-                          optionFold(
-                            after,
-                            () => undefined,
-                            (after) =>
-                              eitherFold(
-                                rToDoc(key.col, oldState.data),
-                                () => undefined,
-                                (before) =>
-                                  optionFold(
-                                    before,
-                                    () => undefined,
-                                    (before) =>
-                                      runTrigger<DocChange>({
-                                        actionTrigger: onColDeleteTrigger,
-                                        col: key.col,
-                                        docToR,
-                                        rToDoc,
-                                        snapshot: {
-                                          after,
-                                          before,
-                                          id: newDocState.id,
-                                        },
-                                      })
-                                  )
-                              )
-                          )
-                      )
+    _(oldDocState)
+      ._(bind(() => (newDocState.state === 'Ready' ? Some(newDocState) : None())))
+      ._(bind2(() => getColTrigger({ buildDraft, col: key.col, spec })))
+      ._(oCompact3)
+      ._(
+        oMap3((oldDocState, newDocState, colTrigger) =>
+          oldDocState.state === 'Ready'
+            ? _(colTrigger.onUpdate)
+                ._(bind(() => _(rToDoc(key.col, oldDocState.data))._(eToO)._(oFlatten).eval()))
+                ._(bind2(() => _(rToDoc(key.col, newDocState.data))._(eToO)._(oFlatten).eval()))
+                ._(oCompact3)
+                ._(
+                  oDo3((actionTrigger, before, after) =>
+                    runTrigger<DocChange>({
+                      actionTrigger,
+                      col: key.col,
+                      docToR,
+                      rToDoc,
+                      snapshot: {
+                        after,
+                        before,
+                        id: newDocState.id,
+                      },
+                    })
                   )
-                : optionFold(
-                    colTrigger.onCreate,
-                    () => undefined,
-                    (onColCreateTrigger) =>
-                      eitherFold(
-                        rToDoc(key.col, newDocState.data),
-                        () => undefined,
-                        (doc) =>
-                          optionFold(
-                            doc,
-                            () => undefined,
-                            (doc) =>
-                              runTrigger<DocSnapshot>({
-                                actionTrigger: onColCreateTrigger,
-                                col: key.col,
-                                docToR,
-                                rToDoc,
-                                snapshot: {
-                                  doc,
-                                  id: newDocState.id,
-                                },
-                              })
-                          )
-                      )
-                  );
-            }
-          )
-      );
-    }
+                )
+                .eval()
+            : _(colTrigger.onDelete)
+                ._(bind(() => _(rToDoc(key.col, newDocState.data))._(eToO)._(oFlatten).eval()))
+                ._(oCompact2)
+                ._(
+                  oDo2((actionTrigger, doc) =>
+                    runTrigger<DocSnapshot>({
+                      actionTrigger,
+                      col: key.col,
+                      docToR,
+                      rToDoc,
+                      snapshot: {
+                        doc,
+                        id: newDocState.id,
+                      },
+                    })
+                  )
+                )
+                .eval()
+        )
+      )
+      .eval();
   };
 }
 
@@ -291,7 +266,7 @@ export function deleteDocState({
     ._(oMap((docState) => (docState.state === 'Ready' ? Some(docState) : None())))
     ._(oFlatten)
     ._(
-      bindL((docState) =>
+      bind((docState) =>
         _(docState)
           ._(oMap((docState) => _(rToDoc(key.col, docState.data))._(eToO).eval()))
           ._(oFlatten)
@@ -300,7 +275,7 @@ export function deleteDocState({
       )
     )
     ._(
-      bind2(
+      bind2(() =>
         _(getColTrigger({ buildDraft, col: key.col, spec }))
           ._(oMap((colTrigger) => colTrigger.onDelete))
           ._(oFlatten)
@@ -309,7 +284,7 @@ export function deleteDocState({
     )
     ._(oCompact3)
     ._(
-      oDo(([docState, doc, onColDeleteTrigger]) =>
+      oDo3((docState, doc, onColDeleteTrigger) =>
         runTrigger<DocSnapshot>({
           actionTrigger: onColDeleteTrigger,
           col: key.col,

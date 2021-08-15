@@ -212,22 +212,14 @@ export function toTaskLeft<T>(t: T): Task<Left<T>> {
   return _(t)._(Left)._(Task).eval();
 }
 
-export function bind<A, B>(a: A): (t: B) => readonly [B, A] {
-  return (b) => [b, a];
-}
-
-export function bindL<A, B>(mapper: (b: B) => A): (t: B) => readonly [B, A] {
+export function bind<A, B>(mapper: (b: B) => A): (t: B) => readonly [B, A] {
   return (b) => [b, mapper(b)];
 }
 
-export function bind2<A, B, C>(a: A): (t: readonly [B, C]) => readonly [B, C, A] {
-  return ([b, c]) => [b, c, a];
-}
-
-export function bindL2<A, B, C>(
-  mapper: (t: readonly [B, C]) => A
+export function bind2<A, B, C>(
+  mapper: (b: B, c: C) => A
 ): (t: readonly [B, C]) => readonly [B, C, A] {
-  return ([b, c]) => [b, c, mapper([b, c])];
+  return ([b, c]) => [b, c, mapper(b, c)];
 }
 
 export type OCompact3<A, B, C> = (
@@ -242,5 +234,37 @@ export function oCompact3<B, C, A>([b, c, a]: readonly [Option<B>, Option<C>, Op
   readonly [B, C, A]
 > {
   const prev = oCompact2([b, c]);
-  return isSome(a) && isSome(prev) ? Some(bind2<A, B, C>(a.value)(prev.value)) : None();
+  return isSome(a) && isSome(prev) ? Some(bind2<A, B, C>(() => a.value)(prev.value)) : None();
+}
+
+export function oMap2<T, A, B>(
+  mapper: (a: A, b: B) => T
+): (o: Option<readonly [A, B]>) => Option<T> {
+  return (option) => (isNone(option) ? option : Some(mapper(...option.value)));
+}
+
+export function oMap3<T, A, B, C>(
+  mapper: (a: A, b: B, c: C) => T
+): (o: Option<readonly [A, B, C]>) => Option<T> {
+  return (option) => (isNone(option) ? option : Some(mapper(...option.value)));
+}
+
+export function oDo2<A, B>(effect: (a: A, b: B) => void): Identity<Option<readonly [A, B]>> {
+  return (option) => {
+    if (isSome(option)) {
+      effect(...option.value);
+    }
+    return option;
+  };
+}
+
+export function oDo3<A, B, C>(
+  effect: (a: A, b: B, c: C) => void
+): Identity<Option<readonly [A, B, C]>> {
+  return (option) => {
+    if (isSome(option)) {
+      effect(...option.value);
+    }
+    return option;
+  };
 }

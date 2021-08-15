@@ -2,22 +2,34 @@
 /* eslint-disable functional/prefer-readonly-type */
 /* eslint-disable functional/no-let */
 
-import { Trigger } from 'kira-nosql';
+import { Spec } from 'kira-core';
+import { BuildDraft, getTrigger, Trigger } from 'kira-nosql';
+import { getStateController, None, Option, Some } from 'trimop';
 
-type CachedData = {
-  trigger: Trigger;
-};
+import { _, doEffect, oToSome } from './trimop/pipe';
+import { Unsubscribe } from './type';
 
-const cachedData: { [T in keyof CachedData]?: CachedData[T] } = {};
+const cachedTrigger = getStateController<Option<Trigger>>(None());
 
-export function getCached<N extends keyof CachedData>({
-  key,
-  builder,
+export function init(): Unsubscribe {
+  return () => {
+    cachedTrigger.set(None());
+  };
+}
+
+export function getCachedTrigger({
+  buildDraft,
+  spec,
 }: {
-  readonly builder: () => CachedData[N];
-  readonly key: N;
-}): CachedData[N] {
-  const cachedValue = cachedData[key] ?? builder();
-  cachedData[key] = cachedValue;
-  return cachedValue as CachedData[N];
+  readonly buildDraft: BuildDraft;
+  readonly spec: Spec;
+}): Trigger {
+  return _(cachedTrigger.get())
+    ._(oToSome(() => getTrigger({ buildDraft, spec })))
+    ._(
+      doEffect((trigger) => {
+        cachedTrigger.set(Some(trigger));
+      })
+    )
+    .eval();
 }
