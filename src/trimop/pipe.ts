@@ -195,8 +195,8 @@ export interface Dict<T> {
 
 export type DEntry<T> = readonly [string, NonNullable<T>];
 
-export function DEntry<T>(key: string, value: NonNullable<T>): DEntry<T> {
-  return [key, value];
+export function dEntry<T>(key: string): (value: NonNullable<T>) => DEntry<T> {
+  return (value) => [key, value];
 }
 
 export function dFromEntry<T>(entries: readonly DEntry<T>[]): Dict<T> {
