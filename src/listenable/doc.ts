@@ -23,6 +23,8 @@ import {
   doEffect,
   eToO,
   flow,
+  oChain,
+  oChain2,
   oCompact2,
   oCompact3,
   oeMap,
@@ -129,13 +131,11 @@ function runTrigger<S extends TriggerSnapshot>({
                   _({ col, id })
                     ._(_getDocState)
                     ._(
-                      oMap((docState) =>
+                      oChain((docState) =>
                         docState.state === 'Ready' ? Some(rToDoc(col, docState.data)) : None()
                       )
                     )
-                    ._(oFlatten)
-                    ._(oMap(eToO))
-                    ._(oFlatten)
+                    ._(oChain(eToO))
                     ._(oMap((doc) => applyDocWrite({ doc, writeDoc: docCommit.writeDoc })))
                     ._(
                       oeMap((newDoc) =>
@@ -240,13 +240,13 @@ export function buildSetDocState({
         )
       )
       ._(oFlatten)
-      ._(oMap((runTrigger) => _(runTrigger)._(tDo)._val()))
+      ._(oMap(tDo))
       ._val();
   };
 }
 
 /**
- * TODO: error should not be made none (disable eToO)
+ * TODO: error should not be made none (disable eToO), use oToE instead
  * @param param0
  */
 export function deleteDocState({
@@ -265,21 +265,12 @@ export function deleteDocState({
   _(key)
     ._(_getDocState)
     ._(doEffect(() => _deleteDocState(key)))
-    ._(oMap((docState) => (docState.state === 'Ready' ? Some(docState) : None())))
-    ._(oFlatten)
-    ._(
-      bind(
-        flow(oMap((docState: ReadyDocState) => _(rToDoc(key.col, docState.data))._(eToO)._val()))
-          ._(oFlatten)
-          ._(oFlatten)
-          ._val()
-      )
-    )
+    ._(oChain((docState) => (docState.state === 'Ready' ? Some(docState) : None())))
+    ._(bind(oChain2((docState: ReadyDocState) => _(rToDoc(key.col, docState.data))._(eToO)._val())))
     ._(
       bind2(() =>
         _(getColTrigger({ buildDraft, col: key.col, spec }))
-          ._(oMap((colTrigger) => colTrigger.onDelete))
-          ._(oFlatten)
+          ._(oChain((colTrigger) => colTrigger.onDelete))
           ._val()
       )
     )
@@ -291,10 +282,7 @@ export function deleteDocState({
           col: key.col,
           docToR,
           rToDoc,
-          snapshot: {
-            doc,
-            id: docState.id,
-          },
+          snapshot: { doc, id: docState.id },
         })
       )
     )

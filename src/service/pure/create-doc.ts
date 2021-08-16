@@ -12,7 +12,7 @@ import {
   oGetOrElse,
   oMap,
   Task,
-  teFlatten,
+  teChain,
   teLeft,
   teMap,
   teMapLeft,
@@ -24,12 +24,12 @@ import {
   CreateDoc,
   CreateDocError,
   CToField,
-  CToFieldCreateDocError,
+  cToFieldCreateDocError,
   PGetNewDocId,
-  PGetNewDocIdCreateDocError,
+  pGetNewDocIdCreateDocError,
   PSetDoc,
-  PSetDocCreateDocError,
-  UnknownColCreateDocError,
+  pSetDocCreateDocError,
+  unknownColCreateDocError,
 } from '../../type';
 
 export function buildCreateDoc({
@@ -51,8 +51,9 @@ export function buildCreateDoc({
           _(givenId)
             ._(oMap((t) => _(t)._(teRight)._val()))
             ._(oGetOrElse(() => _({ col })._(pGetNewDocId)._val()))
+            ._(teMapLeft(pGetNewDocIdCreateDocError))
             ._(
-              teMap((id) =>
+              teChain((id) =>
                 _(colSpec)
                   ._(
                     dMap((fieldSpec, fieldName) =>
@@ -69,22 +70,20 @@ export function buildCreateDoc({
                   ._(tMap(deCompact))
                   ._(teMap(doCompact))
                   ._(teMap((doc) => ({ doc, id })))
-                  ._<Task<Either<CreateDocError, DocSnapshot>>>(teMapLeft(CToFieldCreateDocError))
+                  ._(teMapLeft(cToFieldCreateDocError))
                   ._val()
               )
             )
-            ._(teMapLeft(PGetNewDocIdCreateDocError))
-            ._(teFlatten)
             ._val()
         )
       )
       ._(
         oGetOrElse<Task<Either<CreateDocError, DocSnapshot>>>(() =>
-          _(UnknownColCreateDocError({ col }))._(teLeft)._val()
+          _(unknownColCreateDocError({ col }))._(teLeft)._val()
         )
       )
       ._(
-        teMap((snapshot) =>
+        teChain((snapshot) =>
           _(
             pSetDoc({
               doc: snapshot.doc,
@@ -93,10 +92,9 @@ export function buildCreateDoc({
             })
           )
             ._(teMap(() => snapshot))
-            ._(teMapLeft(PSetDocCreateDocError))
+            ._(teMapLeft(pSetDocCreateDocError))
             ._val()
         )
       )
-      ._(teFlatten)
       ._val();
 }

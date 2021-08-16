@@ -1,12 +1,12 @@
 /* eslint-disable import/exports-last */
 import { Either, isLeft, isNone, isRight, isSome, Left, None, Option, Right, Some } from 'trimop';
 
-export type Pipep<T> = {
-  readonly _: <TResult>(mapper: (t: T) => TResult) => Pipep<TResult>;
+export type Pipe<T> = {
+  readonly _: <TResult>(mapper: (t: T) => TResult) => Pipe<TResult>;
   readonly _val: () => T;
 };
 
-export function _<T>(t: T): Pipep<T> {
+export function _<T>(t: T): Pipe<T> {
   return {
     _: (mapper) => _(mapper(t)),
     _val: () => t,
@@ -34,8 +34,6 @@ export type ToTask<T> = (t: T) => Task<T>;
 export type OIdentity<T> = (option: Option<T>) => Option<T>;
 
 export type OFold<TResult, T> = (option: Option<T>) => TResult;
-
-export type OMap<TResult, T> = (option: Option<T>) => Option<TResult>;
 
 export type EIdentity<E, T> = (either: Either<E, T>) => Either<E, T>;
 
@@ -137,8 +135,18 @@ export function eMap<TResult, E, T>(mapper: (t: T) => TResult): EMap<TResult, E,
   return (either) => (isLeft(either) ? either : Right(mapper(either.right)));
 }
 
+export type OMap<TResult, T> = (option: Option<T>) => Option<TResult>;
+
 export function oMap<TResult, T>(mapper: (t: T) => TResult): OMap<TResult, T> {
   return (option) => (isNone(option) ? option : Some(mapper(option.value)));
+}
+
+export function oChain<TResult, T>(mapper: (t: T) => Option<TResult>): OMap<TResult, T> {
+  return (option) => _(option)._(oMap(mapper))._(oFlatten)._val();
+}
+
+export function oChain2<TResult, T>(mapper: (t: T) => Option<Option<TResult>>): OMap<TResult, T> {
+  return (option) => _(option)._(oMap(mapper))._(oFlatten)._(oFlatten)._val();
 }
 
 export function oFrom<T>(t: NonNullable<T> | undefined | null): Option<T> {
@@ -324,6 +332,19 @@ export function teMap<TResult, E, T>(mapper: (e: T) => TResult): TEMap<TResult, 
   return tMap(eMap(mapper));
 }
 
+export function teFlatten<E, T>(e: Task<Either<E, Task<Either<E, T>>>>): Task<Either<E, T>> {
+  return _(e)
+    ._(tMap((e) => (isLeft(e) ? Task(e) : e.right)))
+    ._(tFlatten)
+    ._val();
+}
+
+export function teChain<TResult, E, T>(
+  mapper: (t: T) => Task<Either<E, TResult>>
+): TEMap<TResult, E, T> {
+  return (te) => _(te)._(teMap(mapper))._(teFlatten)._val();
+}
+
 export type OEMap<TResult, E, T> = (task: Option<Either<E, T>>) => Option<Either<E, TResult>>;
 
 export function oeMap<TResult, E, T>(mapper: (e: T) => TResult): OEMap<TResult, E, T> {
@@ -373,12 +394,4 @@ export function doCompact<T>(d: Dict<Option<NonNullable<T>>>): Dict<T> {
       )
     )
     ._val();
-}
-
-export function teFlatten<E, T>(e: Task<Either<E, Task<Either<E, T>>>>): Task<Either<E, T>> {
-  return _(e)
-    ._(tMap((e) => (isLeft(e) ? Task(e) : e.right)))
-    ._(tFlatten)
-    ._val();
-  // if (isLeft(e) {e : () => e.right().then((r) => r))).value()
 }
