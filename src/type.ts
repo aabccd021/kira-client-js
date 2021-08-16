@@ -188,12 +188,17 @@ export type InvalidTypeRToDocErr = {
   readonly message?: string;
 };
 
+export type UnknownColRToDocErr = {
+  readonly _errorType: 'UnknownColErr';
+  readonly col: string;
+};
+
 export type NeverRToDocErr = {
   readonly _errorType: 'NeverErr';
   readonly never: unknown;
 };
 
-export type RToDocErr = InvalidTypeRToDocErr | NeverRToDocErr;
+export type RToDocErr = InvalidTypeRToDocErr | NeverRToDocErr | UnknownColRToDocErr;
 
 export function invalidTypeRToDocErr(p: {
   readonly col: string;
@@ -214,6 +219,13 @@ export function neverRToFieldErr(never: unknown): RToDocErr {
   };
 }
 
+export function unknownColRToDocErr(col: string): RToDocErr {
+  return {
+    _errorType: 'UnknownColErr',
+    col,
+  };
+}
+
 /**
  *
  */
@@ -223,21 +235,27 @@ export type RToFieldCtx = {
   readonly fieldName: string;
 };
 
-/**
- *
- */
-export type RToField<E extends RToDocErr> = (param: {
-  readonly Ctx: RToFieldCtx;
-  readonly fieldSpec: FieldSpec;
-}) => Either<E, Option<Field>>;
+export function rToFieldCtx({
+  col,
+  fieldName,
+}: {
+  readonly col: string;
+  readonly fieldName: string;
+}): (field: Option<RField>) => RToFieldCtx {
+  return (field) => ({ col, field, fieldName });
+}
 
 /**
  *
  */
-export type RToDoc<E extends RToDocErr = RToDocErr> = (
-  col: string,
-  rDoc: RDoc
-) => Either<E, Option<Doc>>;
+export type RToField = (
+  fieldSpec: FieldSpec
+) => (ctx: RToFieldCtx) => Either<RToDocErr, Option<Field>>;
+
+/**
+ *
+ */
+export type RToDoc = (col: string) => (rDoc: RDoc) => Either<RToDocErr, Doc>;
 
 /**
  *
@@ -337,7 +355,7 @@ export function invalidTypeCToFieldErr(p: {
   readonly field: unknown;
   readonly fieldName: string;
   readonly message?: string;
-}): InvalidTypeCToFieldErr {
+}): CToFieldErr {
   return {
     ...p,
     _errorType: 'InvalidTypeCToFieldErr',
@@ -365,9 +383,9 @@ export function cToFieldCtx(p: {
 /**
  *
  */
-export type CToField<E extends CToFieldErr = CToFieldErr> = (
+export type CToField = (
   fieldSpec: FieldSpec
-) => (ctx: CToFieldCtx) => Task<Either<E, Option<Field>>>;
+) => (ctx: CToFieldCtx) => Task<Either<CToFieldErr, Option<Field>>>;
 
 /**
  *
