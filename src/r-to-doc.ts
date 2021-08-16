@@ -1,49 +1,41 @@
 import { Doc, Spec } from 'kira-core';
-import { eitherMapRight, Some } from 'kira-core/node_modules/trimop';
-import {
-  Either,
-  eitherArrayReduce,
-  Left,
-  None,
-  Option,
-  optionFold,
-  optionFromNullable,
-  Right,
-} from 'trimop';
+import { Either, Left } from 'trimop';
 
-import { RField, RToDoc, RToDocErr, RToDocUnknownCollectionNameErr, RToField } from './type';
+import {
+  _,
+  deCompact,
+  dFilter,
+  dLookup,
+  dMapValues,
+  doCompact,
+  eMap,
+  oGetOrElse,
+  oMap,
+} from './trimop/pipe';
+import { RToDoc, RToDocErr, RToField, rToFieldCtx, unknownColRToDocErr } from './type';
 
 export function buildRToDoc(spec: Spec, rToField: RToField): RToDoc {
   return (col, rDoc) =>
-    optionFold(
-      optionFromNullable(spec[col]),
-      () => Left(RToDocUnknownCollectionNameErr({ col })) as Either<RToDocErr, Option<Doc>>,
-      (colSpec) =>
-        eitherArrayReduce(
-          Object.entries(colSpec).filter(([fieldName]) => fieldName[0] !== '_'),
-          Right(None()) as Either<RToDocErr, Option<Doc>>,
-          (acc, [fieldName, fieldSpec]) =>
-            eitherMapRight(
-              rToField({
-                ctx: { col, field: optionFromNullable<RField>(rDoc[fieldName]), fieldName },
-                fieldSpec,
-              }),
-              (field) =>
-                Right(
-                  optionFold(
-                    field,
-                    () => acc,
-                    (field) =>
-                      Some(
-                        optionFold(
-                          acc,
-                          () => ({ [fieldName]: field }),
-                          (acc) => ({ ...acc, [fieldName]: field })
-                        )
-                      )
-                  )
-                )
+    _(spec)
+      ._(dLookup(col))
+      ._(
+        oMap((colSpec) =>
+          _(colSpec)
+            ._(dFilter((_, fieldName) => fieldName[0] !== '_'))
+            ._(
+              dMapValues((fieldSpec, fieldName) =>
+                _(rDoc)
+                  ._(dLookup(fieldName))
+                  ._(rToFieldCtx({ col, fieldName }))
+                  ._(rToField(fieldSpec))
+                  ._val()
+              )
             )
+            ._(deCompact)
+            ._(eMap(doCompact))
+            ._val()
         )
-    );
+      )
+      ._(oGetOrElse<Either<RToDocErr, Doc>>(() => _(col)._(unknownColRToDocErr)._(Left)._val()))
+      ._val();
 }

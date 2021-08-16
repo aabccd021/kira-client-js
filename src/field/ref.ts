@@ -1,7 +1,7 @@
 import { isImageFieldValue, RefField, RefFieldSpec } from 'kira-core';
-import { Either, Left, Option } from 'trimop';
+import { Either, Left, Option, Some } from 'trimop';
 
-import { _, eMap, eMapLeft, oGetOrElse, oMap, Task } from '../trimop/pipe';
+import { _, eMap, eMapLeft, oeGetOrElse, oGetOrElse, oMap, Task } from '../trimop/pipe';
 import {
   CField,
   CToFieldCtx,
@@ -43,7 +43,7 @@ export function cToRefField({
   readonly fieldSpec: RefFieldSpec;
   readonly getAuthState: GetAuthState;
   readonly rToDoc: RToDoc;
-}): Task<Either<CToFieldErr, Option<RefField>>> {
+}): Task<Either<CToFieldErr, Some<RefField>>> {
   return _(field)
     ._(
       oMap((rDoc) =>
@@ -52,44 +52,30 @@ export function cToRefField({
               ._(
                 oMap((auth) =>
                   auth.state === 'signedIn'
-                    ? _(rToDoc(col, auth.user))
-                        ._(
-                          eMap((doc) =>
-                            _(doc)
-                              ._(oMap((doc) => RefField({ doc, id: auth.userId })))
-                              ._val()
-                          )
-                        )
+                    ? _(auth.user)
+                        ._(rToDoc(col))
+                        ._(eMap((doc) => Some(RefField({ doc, id: auth.userId }))))
                         ._(eMapLeft(rToDocCToFieldErr))
                         ._val()
                     : Left(userNotSignedInCToFieldErr(`create ${col} doc`))
                 )
               )
               ._(
-                oGetOrElse<Either<CToFieldErr, Option<RefField>>>(() =>
+                oGetOrElse<Either<CToFieldErr, Some<RefField>>>(() =>
                   Left(userNotSignedInCToFieldErr(`create ${col} doc`))
                 )
               )
               ._val()
           : isRefRField(rDoc)
-          ? _(rToDoc(col, rDoc))
-              ._(
-                eMap((doc) =>
-                  _(doc)
-                    ._(oMap((doc) => RefField({ doc, id: rDoc._id })))
-                    ._val()
-                )
-              )
+          ? _(rDoc)
+              ._(rToDoc(col))
+              ._(eMap((doc) => Some(RefField({ doc, id: rDoc._id }))))
               ._(eMapLeft(rToDocCToFieldErr))
               ._val()
           : Left(invalidTypeCToFieldErr({ col, field: rDoc, fieldName }))
       )
     )
-    ._(
-      oGetOrElse<Either<CToFieldErr, Option<RefField>>>(() =>
-        _(invalidTypeCToFieldErr({ col, field, fieldName }))._(Left)._val()
-      )
-    )
+    ._(oeGetOrElse(() => invalidTypeCToFieldErr({ col, field, fieldName })))
     ._(Task)
     ._val();
 }
@@ -106,14 +92,9 @@ export function rToRefField({
     ._(
       oMap((field) =>
         isRefRField(field)
-          ? _(rToDoc(col, field))
-              ._(
-                eMap((doc) =>
-                  _(doc)
-                    ._(oMap((doc) => RefField({ doc, id: field._id })))
-                    ._val()
-                )
-              )
+          ? _(field)
+              ._(rToDoc(col))
+              ._(eMap((doc) => Some(RefField({ doc, id: field._id }))))
               ._val()
           : Left(invalidTypeRToDocErr({ col, field, fieldName }))
       )

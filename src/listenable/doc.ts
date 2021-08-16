@@ -18,12 +18,11 @@ import {
   bind3,
   bind4,
   dLookup,
-  dMap,
+  dMapEntries,
   doEffect,
   eToO,
   flow,
   oChain,
-  oChain2,
   oCompact2,
   oCompact3,
   oCompact4,
@@ -31,9 +30,9 @@ import {
   oFlatten,
   oGetOrElse,
   oMap,
-  oMap2,
-  oMap3,
-  oMap4,
+  opMap2,
+  opMap3,
+  opMap4,
   Task,
   tDo,
   teMap,
@@ -127,10 +126,10 @@ function buildRunTrigger({
         teMap((transactionCommit) =>
           _(transactionCommit)
             ._(
-              dMap((colDocs, col) =>
+              dMapEntries((colDocs, col) =>
                 _(colDocs)
                   ._(
-                    dMap((docCommit, id) => {
+                    dMapEntries((docCommit, id) => {
                       _({ col, id })
                         ._(_getDocState)
                         ._(
@@ -138,7 +137,7 @@ function buildRunTrigger({
                             docState.state === 'Ready' ? Some(rToDoc(col, docState.data)) : None()
                           )
                         )
-                        ._(oChain(eToO))
+                        ._(oMap(eToO))
                         // TODO: curry applyDocWrite
                         ._(oMap((doc) => applyDocWrite({ doc, writeDoc: docCommit.writeDoc })))
                         ._(
@@ -200,14 +199,14 @@ export function buildSetDocState({
       ._(bind4(() => Some(buildRunTrigger({ col: key.col, docToR, rToDoc }))))
       ._(oCompact4)
       ._(
-        oMap4((oldDocState, newDocState, colTrigger, runTrigger) =>
+        opMap4((oldDocState, newDocState, colTrigger, runTrigger) =>
           oldDocState.state === 'Ready'
             ? _(colTrigger.onUpdate)
-                ._(bind2(() => _(rToDoc(key.col, oldDocState.data))._(eToO)._(oFlatten)._val()))
-                ._(bind3(() => _(rToDoc(key.col, newDocState.data))._(eToO)._(oFlatten)._val()))
+                ._(bind2(() => _(rToDoc(key.col, oldDocState.data))._(eToO)._val()))
+                ._(bind3(() => _(rToDoc(key.col, newDocState.data))._(eToO)._val()))
                 ._(oCompact3)
                 ._(
-                  oMap3((actionTrigger, before, after) =>
+                  opMap3((actionTrigger, before, after) =>
                     runTrigger({
                       actionTrigger,
                       snapshot: { after, before, id: newDocState.id },
@@ -216,10 +215,10 @@ export function buildSetDocState({
                 )
                 ._val()
             : _(colTrigger.onDelete)
-                ._(bind2(() => _(rToDoc(key.col, newDocState.data))._(eToO)._(oFlatten)._val()))
+                ._(bind2(() => _(rToDoc(key.col, newDocState.data))._(eToO)._val()))
                 ._(oCompact2)
                 ._(
-                  oMap2((actionTrigger, doc) =>
+                  opMap2((actionTrigger, doc) =>
                     runTrigger({
                       actionTrigger,
                       snapshot: { doc, id: newDocState.id },
@@ -256,7 +255,7 @@ export function deleteDocState({
     ._(_getDocState)
     ._(doEffect(() => _deleteDocState(key)))
     ._(oChain((docState) => (docState.state === 'Ready' ? Some(docState) : None())))
-    ._(bind2(oChain2((docState) => _(rToDoc(key.col, docState.data))._(eToO)._val())))
+    ._(bind2(oChain((docState) => _(rToDoc(key.col, docState.data))._(eToO)._val())))
     ._(
       bind3(() =>
         _(getColTrigger({ buildDraft, col: key.col, spec }))
@@ -267,7 +266,7 @@ export function deleteDocState({
     ._(bind4(() => Some(buildRunTrigger({ col: key.col, docToR, rToDoc }))))
     ._(oCompact4)
     ._(
-      oMap4((docState, doc, actionTrigger, runTrigger) =>
+      opMap4((docState, doc, actionTrigger, runTrigger) =>
         runTrigger({
           actionTrigger,
           snapshot: { doc, id: docState.id },

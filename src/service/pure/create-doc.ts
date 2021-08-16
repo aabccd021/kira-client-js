@@ -8,7 +8,7 @@ import {
   dEntry,
   dFromEntry,
   dLookup,
-  dMap,
+  dMapEntries,
   doCompact,
   oGetOrElse,
   oMap,
@@ -58,7 +58,7 @@ export function buildCreateDoc({
               teChain((id) =>
                 _(colSpec)
                   ._(
-                    dMap((fieldSpec, fieldName) =>
+                    dMapEntries((fieldSpec, fieldName) =>
                       _(cDoc)
                         ._(dLookup(fieldName))
                         ._(cToFieldCtx({ col, fieldName, id }))

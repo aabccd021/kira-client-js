@@ -33,8 +33,6 @@ export type ToTask<T> = (t: T) => Task<T>;
 
 export type OIdentity<T> = (option: Option<T>) => Option<T>;
 
-export type OFold<TResult, T> = (option: Option<T>) => TResult;
-
 export type EIdentity<E, T> = (either: Either<E, T>) => Either<E, T>;
 
 export type Identity<T> = (t: T) => T;
@@ -99,8 +97,21 @@ export function eToRight<E, T>(mapper: (l: Left<E>) => T): EFold<T, E, T> {
   return (either) => (isLeft(either) ? mapper(either) : either.right);
 }
 
-export function oGetOrElse<T>(mapper: () => T): OFold<T, T> {
+export type OFold<TResult, T> = (option: Option<T>) => TResult;
+
+export type OGetOrElse<T> = (option: Option<T>) => T;
+
+export function oGetOrElse<T>(mapper: () => T): OGetOrElse<T> {
   return (option) => (isNone(option) ? mapper() : option.value);
+}
+
+export type OEFold<E, T> = (oe: Option<Either<E, T>>) => Either<E, T>;
+
+export function oeGetOrElse<E, T>(mapper: () => E): OEFold<E, T> {
+  return (option) =>
+    _(option)
+      ._(oGetOrElse<Either<E, T>>(() => Left(mapper())))
+      ._val();
 }
 
 export function oFlatten<T>(option: Option<Option<T>>): Option<T> {
@@ -209,13 +220,36 @@ export function dLookup<T>(key: string): DLookup<T> {
   return (dict) => oFrom(dict[key]);
 }
 
-export type DMap<TR, T> = (dict: Dict<T>) => readonly TR[];
+export type DMapEntries<TR, T> = (dict: Dict<T>) => readonly TR[];
 
-export function dMap<TR, T>(
+export function dMapEntries<TR, T>(
   mapper: (field: T, fieldName: string, index: number) => TR
-): DMap<TR, T> {
+): DMapEntries<TR, T> {
   return (dict) =>
     Object.entries(dict).map(([fieldName, field], index) => mapper(field, fieldName, index));
+}
+
+export function dFilter<T>(
+  mapper: (field: T, fieldName: string, index: number) => boolean
+): Identity<Dict<T>> {
+  return (dict) =>
+    Object.fromEntries(
+      Object.entries(dict).filter(([fieldName, field], index) => mapper(field, fieldName, index))
+    );
+}
+
+export type DMap<TR, T> = (dict: Dict<T>) => Dict<TR>;
+
+export function dMapValues<TR, T>(
+  mapper: (field: T, fieldName: string, index: number) => NonNullable<TR>
+): DMap<TR, T> {
+  return (dict) =>
+    Object.fromEntries(
+      Object.entries(dict).map(([fieldName, field], index) => [
+        fieldName,
+        mapper(field, fieldName, index),
+      ])
+    );
 }
 
 export type DReduce<TR, T> = (dict: Dict<T>) => TR;
@@ -314,28 +348,44 @@ export function oCompact4<A, B, C, T>([a, b, c, t]: readonly [
     ._val();
 }
 
-export function oMap2<T, A, B>(
+export function pMap2<T, A, B>(mapper: (a: A, b: B) => T): (tuple: readonly [A, B]) => T {
+  return (tuple) => mapper(...tuple);
+}
+
+export function pMap3<T, A, B, C>(
+  mapper: (a: A, b: B, c: C) => T
+): (tuple: readonly [A, B, C]) => T {
+  return (tuple) => mapper(...tuple);
+}
+
+export function pMap4<T, A, B, C, D>(
+  mapper: (a: A, b: B, c: C, d: D) => T
+): (tuple: readonly [A, B, C, D]) => T {
+  return (tuple) => mapper(...tuple);
+}
+
+export function opMap2<T, A, B>(
   mapper: (a: A, b: B) => T
 ): (o: Option<readonly [A, B]>) => Option<T> {
-  return (option) => (isNone(option) ? option : Some(mapper(...option.value)));
+  return oMap(pMap2(mapper));
 }
 
-export function eMap2<T, E, A, B>(
-  mapper: (a: A, b: B) => T
-): (o: Either<E, readonly [A, B]>) => Either<E, T> {
-  return (either) => (isLeft(either) ? either : Right(mapper(...either.right)));
-}
-
-export function oMap3<T, A, B, C>(
+export function opMap3<T, A, B, C>(
   mapper: (a: A, b: B, c: C) => T
 ): (o: Option<readonly [A, B, C]>) => Option<T> {
-  return (option) => (isNone(option) ? option : Some(mapper(...option.value)));
+  return oMap(pMap3(mapper));
 }
 
-export function oMap4<T, A, B, C, D>(
+export function opMap4<T, A, B, C, D>(
   mapper: (a: A, b: B, c: C, d: D) => T
 ): (o: Option<readonly [A, B, C, D]>) => Option<T> {
-  return (option) => (isNone(option) ? option : Some(mapper(...option.value)));
+  return oMap(pMap4(mapper));
+}
+
+export function epMap2<T, E, A, B>(
+  mapper: (a: A, b: B) => T
+): (o: Either<E, readonly [A, B]>) => Either<E, T> {
+  return eMap(pMap2(mapper));
 }
 
 export function oDo2<A, B>(effect: (a: A, b: B) => void): Identity<Option<readonly [A, B]>> {
@@ -415,7 +465,7 @@ export function deCompact<E, T>(de: Dict<Either<E, NonNullable<T>>>): Either<E, 
         _(acc)
           ._(bind2(() => value))
           ._(eCompact2)
-          ._(eMap2((acc, value) => ({ ...acc, [key]: value })))
+          ._(epMap2((acc, value) => ({ ...acc, [key]: value })))
           ._val()
       )
     )
@@ -425,9 +475,15 @@ export function deCompact<E, T>(de: Dict<Either<E, NonNullable<T>>>): Either<E, 
 export function doCompact<T>(d: Dict<Option<NonNullable<T>>>): Dict<T> {
   return _(d)
     ._(
-      dReduce({} as Dict<T>, (acc, field, fieldName) =>
+      dReduce<Dict<T>, Option<NonNullable<T>>>({}, (acc, field, fieldName) =>
         isNone(field) ? acc : { ...acc, [fieldName]: field.value }
       )
     )
     ._val();
 }
+
+export type L<T> = <E>(left: E) => Either<E, T>;
+
+// export function left<T>(left: T): Either<T, unknown> {
+//   return { _tag: 'Left', left } as Either<T, unknown>;
+// }
