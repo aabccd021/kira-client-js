@@ -4,12 +4,13 @@ import {
   BuildDraft,
   ColTrigger,
   DocChange,
+  DocCommit,
   DraftGetTransactionCommitError,
   GetDoc,
   getTransactionCommit,
   TriggerSnapshot,
 } from 'kira-nosql';
-import { Either, getStateController, None, Option, Right, Some } from 'trimop';
+import { Dict, Either, getStateController, None, Option, Right, Some } from 'trimop';
 
 import { getCachedTrigger } from '../cached';
 import { deleteRecord, getRecord, setRecord, subscribeToRecord } from '../kv';
@@ -21,14 +22,15 @@ import {
   dMap,
   doEffect,
   eToO,
+  flow,
   oCompact2,
   oCompact3,
   oeMap,
   oFlatten,
+  oGetOrElse,
   oMap,
   oMap2,
   oMap3,
-  oToSome,
   Task,
   tDo,
   teMap,
@@ -112,45 +114,43 @@ function runTrigger<S extends TriggerSnapshot>({
     _(key)
       ._(_getDocState)
       ._(oMap((docState) => (docState.state === 'Ready' ? rToDoc(col, docState.data) : {})))
-      ._(oToSome(() => ({})))
+      ._(oGetOrElse(() => ({})))
       ._(Right)
       ._val()
   )
     ._((getDoc) => tFrom(getTransactionCommit({ actionTrigger, getDoc, snapshot })))
     ._(
-      teMap((transactionCommit) =>
-        _(transactionCommit)
-          ._(
-            dMap((colDocs, col) =>
-              _(colDocs)
-                ._(
-                  dMap((docCommit, id) => {
-                    _({ col, id })
-                      ._(_getDocState)
-                      ._(
-                        oMap((docState) =>
-                          docState.state === 'Ready' ? Some(rToDoc(col, docState.data)) : None()
-                        )
+      teMap(
+        flow(
+          dMap((colDocs: Dict<DocCommit>, col: string) =>
+            _(colDocs)
+              ._(
+                dMap((docCommit, id) => {
+                  _({ col, id })
+                    ._(_getDocState)
+                    ._(
+                      oMap((docState) =>
+                        docState.state === 'Ready' ? Some(rToDoc(col, docState.data)) : None()
                       )
-                      ._(oFlatten)
-                      ._(oMap(eToO))
-                      ._(oFlatten)
-                      ._(oMap((doc) => applyDocWrite({ doc, writeDoc: docCommit.writeDoc })))
-                      ._(
-                        oeMap((newDoc) =>
-                          _(newDoc)
-                            ._(docToR)
-                            ._((data) => _setDocState({ col, id }, ReadyDocState({ data, id })))
-                            ._val()
-                        )
+                    )
+                    ._(oFlatten)
+                    ._(oMap(eToO))
+                    ._(oFlatten)
+                    ._(oMap((doc) => applyDocWrite({ doc, writeDoc: docCommit.writeDoc })))
+                    ._(
+                      oeMap((newDoc) =>
+                        _(newDoc)
+                          ._(docToR)
+                          ._((data) => _setDocState({ col, id }, ReadyDocState({ data, id })))
+                          ._val()
                       )
-                      ._val();
-                  })
-                )
-                ._val()
-            )
+                    )
+                    ._val();
+                })
+              )
+              ._val()
           )
-          ._val()
+        )._val()
       )
     )
     ._val();
@@ -240,7 +240,7 @@ export function buildSetDocState({
         )
       )
       ._(oFlatten)
-      ._(oMap((runTriggerTask) => _(runTriggerTask)._(tDo)._val()))
+      ._(oMap((runTrigger) => _(runTrigger)._(tDo)._val()))
       ._val();
   };
 }
@@ -268,9 +268,8 @@ export function deleteDocState({
     ._(oMap((docState) => (docState.state === 'Ready' ? Some(docState) : None())))
     ._(oFlatten)
     ._(
-      bind((docState) =>
-        _(docState)
-          ._(oMap((docState) => _(rToDoc(key.col, docState.data))._(eToO)._val()))
+      bind(
+        flow(oMap((docState: ReadyDocState) => _(rToDoc(key.col, docState.data))._(eToO)._val()))
           ._(oFlatten)
           ._(oFlatten)
           ._val()

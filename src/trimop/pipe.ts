@@ -15,13 +15,13 @@ export function _<T>(t: T): Pipep<T> {
 
 export type Flow<TPrev, TInit> = {
   readonly _: <TNext>(mapper: (t: TPrev) => TNext) => Flow<TNext, TInit>;
-  readonly _val: (p: TInit) => TPrev;
+  readonly _val: () => (p: TInit) => TPrev;
 };
 
 export function flow<TEnd, TInit>(mapper: (t: TInit) => TEnd): Flow<TEnd, TInit> {
   return {
     _: (nextMapper) => flow((z) => nextMapper(mapper(z))),
-    _val: mapper,
+    _val: () => mapper,
   };
 }
 
@@ -48,10 +48,6 @@ export type EMapLeft<EResult, E, T> = (either: Either<E, T>) => Either<EResult, 
 export type EMap<TResult, E, T> = (either: Either<E, T>) => Either<E, TResult>;
 
 export type TMap<TResult, T> = (task: Task<T>) => Task<TResult>;
-
-export function oGetOrElse<T>(none: T): OFold<T, T> {
-  return (option) => (isNone(option) ? none : option.value);
-}
 
 export function eDo<E, T>(effect: (t: T) => void): EIdentity<E, T> {
   return (either) => {
@@ -105,7 +101,7 @@ export function eToRight<E, T>(mapper: (l: Left<E>) => T): EFold<T, E, T> {
   return (either) => (isLeft(either) ? mapper(either) : either.right);
 }
 
-export function oToSome<T>(mapper: () => T): OFold<T, T> {
+export function oGetOrElse<T>(mapper: () => T): OFold<T, T> {
   return (option) => (isNone(option) ? mapper() : option.value);
 }
 
@@ -116,8 +112,6 @@ export function oFlatten<T>(option: Option<Option<T>>): Option<T> {
 export function eFlatten<E, T>(e: Either<E, Either<E, T>>): Either<E, T> {
   return isLeft(e) ? e : e.right;
 }
-
-() => () => 1;
 
 export function z<T>(p: () => Promise<() => Promise<T>>): () => Promise<T> {
   return () => p().then((r) => r());
@@ -238,19 +232,19 @@ export function dReduce<TR, T>(
 //   return dReduce(initialState, reducer)
 // }
 
-export function toTaskRight<T>(t: T): Task<Right<T>> {
+export function teRight<T>(t: T): Task<Right<T>> {
   return _(t)._(Right)._(Task)._val();
 }
 
 export function toTaskRightSome<T>(t: T): Task<Right<Some<T>>> {
-  return _(t)._(Some)._(toTaskRight)._val();
+  return _(t)._(Some)._(teRight)._val();
 }
 
 export function toRightSome<T>(t: T): Right<Some<T>> {
   return _(t)._(Some)._(Right)._val();
 }
 
-export function toTaskLeft<T>(t: T): Task<Left<T>> {
+export function teLeft<T>(t: T): Task<Left<T>> {
   return _(t)._(Left)._(Task)._val();
 }
 
@@ -345,13 +339,13 @@ export function oeMap<TResult, E, T>(mapper: (e: T) => TResult): OEMap<TResult, 
 //   return (either) => (isLeft(either) ? mapper(either) : either);
 // }
 
-export type TEMapLeft<EResult, E, T> = (either: Task<Either<E, T>>) => Task<Either<EResult, T>>;
-
 export type TEFold<TResult, E, T> = (either: Task<Either<E, T>>) => Task<TResult>;
 
-export function teToRight<E, T>(mapper: (l: Left<E>) => T): TEFold<T, E, T> {
+export function teGetOrElse<E, T>(mapper: (l: Left<E>) => T): TEFold<T, E, T> {
   return tMap(eToRight(mapper));
 }
+
+export type TEMapLeft<EResult, E, T> = (either: Task<Either<E, T>>) => Task<Either<EResult, T>>;
 
 export function teMapLeft<EResult, E, T>(mapper: (l: E) => EResult): TEMapLeft<EResult, E, T> {
   return tMap(eMapLeft(mapper));

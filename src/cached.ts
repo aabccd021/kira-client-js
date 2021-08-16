@@ -6,7 +6,7 @@ import { Spec } from 'kira-core';
 import { BuildDraft, getTrigger, Trigger } from 'kira-nosql';
 import { getStateController, None, Option, Some } from 'trimop';
 
-import { _, doEffect, oToSome } from './trimop/pipe';
+import { _, doEffect, oGetOrElse } from './trimop/pipe';
 import { Unsubscribe } from './type';
 
 const cachedTrigger = getStateController<Option<Trigger>>(None());
@@ -25,7 +25,7 @@ export function getCachedTrigger({
   readonly spec: Spec;
 }): Trigger {
   return _(cachedTrigger.get())
-    ._(oToSome(() => getTrigger({ buildDraft, spec })))
+    ._(oGetOrElse(() => getTrigger({ buildDraft, spec })))
     ._(
       doEffect((trigger) => {
         cachedTrigger.set(Some(trigger));

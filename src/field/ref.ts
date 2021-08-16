@@ -1,7 +1,7 @@
 import { isImageFieldValue, RefField, RefFieldSpec } from 'kira-core';
 import { Either, Left, Option } from 'trimop';
 
-import { _, eMap, eMapLeft, oMap, oToSome, Task } from '../trimop/pipe';
+import { _, eMap, eMapLeft, oGetOrElse, oMap, Task } from '../trimop/pipe';
 import {
   CField,
   CToFieldContext,
@@ -71,7 +71,7 @@ export function cToRefField({
                 )
               )
               ._(
-                oToSome<Either<CToFieldError, Option<RefField>>>(() =>
+                oGetOrElse<Either<CToFieldError, Option<RefField>>>(() =>
                   _(CToFieldUserNotSignedInError({ signInRequired: `create ${col} doc` }))
                     ._(Left)
                     ._val()
@@ -95,7 +95,7 @@ export function cToRefField({
       )
     )
     ._(
-      oToSome<Either<CToFieldError, Option<RefField>>>(() =>
+      oGetOrElse<Either<CToFieldError, Option<RefField>>>(() =>
         _(InvalidTypeCToFieldError({ col, field, fieldName }))._(Left)._val()
       )
     )
@@ -128,7 +128,7 @@ export function rToRefField({
       )
     )
     ._(
-      oToSome<Either<RToDocError, Option<RefField>>>(() =>
+      oGetOrElse<Either<RToDocError, Option<RefField>>>(() =>
         _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left)._val()
       )
     )

@@ -1,5 +1,5 @@
 import { DocSnapshot, Spec } from 'kira-core';
-import { Either, Option } from 'trimop';
+import { Either } from 'trimop';
 
 import {
   _,
@@ -9,15 +9,15 @@ import {
   dLookup,
   dMap,
   doCompact,
+  oGetOrElse,
   oMap,
-  oToSome,
   Task,
   teFlatten,
+  teLeft,
   teMap,
   teMapLeft,
+  teRight,
   tMap,
-  toTaskLeft,
-  toTaskRight,
   tParallel,
 } from '../../trimop/pipe';
 import {
@@ -49,8 +49,8 @@ export function buildCreateDoc({
       ._(
         oMap((colSpec) =>
           _(givenId)
-            ._(oMap((t) => _(t)._(toTaskRight)._val()))
-            ._(oToSome(() => _({ col })._(pGetNewDocId)._val()))
+            ._(oMap((t) => _(t)._(teRight)._val()))
+            ._(oGetOrElse(() => _({ col })._(pGetNewDocId)._val()))
             ._(
               teMap((id) =>
                 _(colSpec)
@@ -79,8 +79,8 @@ export function buildCreateDoc({
         )
       )
       ._(
-        oToSome<Task<Either<CreateDocError, DocSnapshot>>>(() =>
-          _(UnknownColCreateDocError({ col }))._(toTaskLeft)._val()
+        oGetOrElse<Task<Either<CreateDocError, DocSnapshot>>>(() =>
+          _(UnknownColCreateDocError({ col }))._(teLeft)._val()
         )
       )
       ._(

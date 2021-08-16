@@ -5,12 +5,12 @@ import {
   _,
   eMap,
   eMapLeft,
+  oGetOrElse,
   oMap,
-  oToSome,
   Task,
+  teLeft,
   tMap,
   toRightSome,
-  toTaskLeft,
   toTaskRightSome,
 } from '../trimop/pipe';
 import {
@@ -57,12 +57,12 @@ export function cToImageField<PUIE extends PUploadImageError>({
                 )
               )
               ._val()
-          : _(InvalidTypeCToFieldError({ col, field, fieldName }))._(toTaskLeft)._val()
+          : _(InvalidTypeCToFieldError({ col, field, fieldName }))._(teLeft)._val()
       )
     )
     ._(
-      oToSome<Task<Either<CToFieldError, Some<ImageField>>>>(() =>
-        _(InvalidTypeCToFieldError({ col, field, fieldName }))._(toTaskLeft)._val()
+      oGetOrElse<Task<Either<CToFieldError, Some<ImageField>>>>(() =>
+        _(InvalidTypeCToFieldError({ col, field, fieldName }))._(teLeft)._val()
       )
     )
     ._val();
@@ -83,7 +83,7 @@ export function rToImageField({
       )
     )
     ._(
-      oToSome<Either<RToDocError, Some<ImageField>>>(() =>
+      oGetOrElse<Either<RToDocError, Some<ImageField>>>(() =>
         _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left)._val()
       )
     )

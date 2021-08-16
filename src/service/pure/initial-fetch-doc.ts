@@ -13,7 +13,7 @@ import {
   ReadyDocState,
   RToDoc,
 } from '../..';
-import { _, oMap, oToSome, Task, teMap, teMapLeft, teToRight } from '../../trimop/pipe';
+import { _, oGetOrElse, oMap, Task, teGetOrElse, teMap, teMapLeft } from '../../trimop/pipe';
 // eslint-disable-next-line import/no-cycle
 import { buildCreateContainsErrorDocState } from '../effect/create-contains-error-doc-state';
 // eslint-disable-next-line import/no-cycle
@@ -64,7 +64,7 @@ export function buildInitialFetchDoc<PRDE extends PReadDocError>({
     _(docState)
       ._(oMap(Task))
       ._(
-        oToSome(() =>
+        oGetOrElse(() =>
           _(key)
             ._(pReadDoc)
             ._(
@@ -78,7 +78,7 @@ export function buildInitialFetchDoc<PRDE extends PReadDocError>({
               )
             )
             ._(teMapLeft(PReadDocDocStateError))
-            ._(teToRight(createContainsErrorDocState(key)))
+            ._(teGetOrElse(createContainsErrorDocState(key)))
             ._val()
         )
       )
