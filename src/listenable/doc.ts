@@ -4,13 +4,12 @@ import {
   BuildDraft,
   ColTrigger,
   DocChange,
-  DocCommit,
   DraftGetTransactionCommitError,
   GetDoc,
   getTransactionCommit,
   TriggerSnapshot,
 } from 'kira-nosql';
-import { Dict, Either, getStateController, None, Option, Right, Some } from 'trimop';
+import { Either, getStateController, None, Option, Right, Some } from 'trimop';
 
 import { getCachedTrigger } from '../cached';
 import { deleteRecord, getRecord, setRecord, subscribeToRecord } from '../kv';
@@ -22,7 +21,6 @@ import {
   dMap,
   doEffect,
   eToO,
-  flow,
   oChain,
   oChain2,
   oCompact2,
@@ -122,35 +120,37 @@ function runTrigger<S extends TriggerSnapshot>({
   )
     ._((getDoc) => tFrom(getTransactionCommit({ actionTrigger, getDoc, snapshot })))
     ._(
-      teMap(
-        flow(
-          dMap((colDocs: Dict<DocCommit>, col: string) =>
-            _(colDocs)
-              ._(
-                dMap((docCommit, id) => {
-                  _({ col, id })
-                    ._(_getDocState)
-                    ._(
-                      oChain((docState) =>
-                        docState.state === 'Ready' ? Some(rToDoc(col, docState.data)) : None()
+      teMap((transactionCommit) =>
+        _(transactionCommit)
+          ._(
+            dMap((colDocs, col: string) =>
+              _(colDocs)
+                ._(
+                  dMap((docCommit, id) => {
+                    _({ col, id })
+                      ._(_getDocState)
+                      ._(
+                        oChain((docState) =>
+                          docState.state === 'Ready' ? Some(rToDoc(col, docState.data)) : None()
+                        )
                       )
-                    )
-                    ._(oChain(eToO))
-                    ._(oMap((doc) => applyDocWrite({ doc, writeDoc: docCommit.writeDoc })))
-                    ._(
-                      oeMap((newDoc) =>
-                        _(newDoc)
-                          ._(docToR)
-                          ._((data) => _setDocState({ col, id }, ReadyDocState({ data, id })))
-                          ._val()
+                      ._(oChain(eToO))
+                      ._(oMap((doc) => applyDocWrite({ doc, writeDoc: docCommit.writeDoc })))
+                      ._(
+                        oeMap((newDoc) =>
+                          _(newDoc)
+                            ._(docToR)
+                            ._((data) => _setDocState({ col, id }, ReadyDocState({ data, id })))
+                            ._val()
+                        )
                       )
-                    )
-                    ._val();
-                })
-              )
-              ._val()
+                      ._val();
+                  })
+                )
+                ._val()
+            )
           )
-        )._val()
+          ._val()
       )
     )
     ._val();
