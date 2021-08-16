@@ -115,7 +115,7 @@ function buildRunTrigger({
     _<GetDoc>(async (key) =>
       _(key)
         ._(_getDocState)
-        ._(oMap((docState) => (docState.state === 'Ready' ? rToDoc(col, docState.data) : {})))
+        ._(oMap((docState) => (docState.state === 'Ready' ? rToDoc(col)(docState.data) : {})))
         ._(oGetOrElse(() => ({})))
         ._(Right)
         ._val()
@@ -134,7 +134,9 @@ function buildRunTrigger({
                         ._(_getDocState)
                         ._(
                           oChain((docState) =>
-                            docState.state === 'Ready' ? Some(rToDoc(col, docState.data)) : None()
+                            docState.state === 'Ready'
+                              ? _(docState.data)._(rToDoc(col))._(Some)._val()
+                              : None()
                           )
                         )
                         ._(oMap(eToO))
@@ -202,8 +204,8 @@ export function buildSetDocState({
         opMap4((oldDocState, newDocState, colTrigger, runTrigger) =>
           oldDocState.state === 'Ready'
             ? _(colTrigger.onUpdate)
-                ._(bind2(() => _(rToDoc(key.col, oldDocState.data))._(eToO)._val()))
-                ._(bind3(() => _(rToDoc(key.col, newDocState.data))._(eToO)._val()))
+                ._(bind2(() => _(oldDocState.data)._(rToDoc(key.col))._(eToO)._val()))
+                ._(bind3(() => _(newDocState.data)._(rToDoc(key.col))._(eToO)._val()))
                 ._(oCompact3)
                 ._(
                   opMap3((actionTrigger, before, after) =>
@@ -215,7 +217,7 @@ export function buildSetDocState({
                 )
                 ._val()
             : _(colTrigger.onDelete)
-                ._(bind2(() => _(rToDoc(key.col, newDocState.data))._(eToO)._val()))
+                ._(bind2(() => _(newDocState.data)._(rToDoc(key.col))._(eToO)._val()))
                 ._(oCompact2)
                 ._(
                   opMap2((actionTrigger, doc) =>
@@ -255,7 +257,7 @@ export function deleteDocState({
     ._(_getDocState)
     ._(doEffect(() => _deleteDocState(key)))
     ._(oChain((docState) => (docState.state === 'Ready' ? Some(docState) : None())))
-    ._(bind2(oChain((docState) => _(rToDoc(key.col, docState.data))._(eToO)._val())))
+    ._(bind2(oChain((docState) => _(docState.data)._(rToDoc(key.col))._(eToO)._val())))
     ._(
       bind3(() =>
         _(getColTrigger({ buildDraft, col: key.col, spec }))
