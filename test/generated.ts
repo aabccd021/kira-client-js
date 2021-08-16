@@ -37,7 +37,7 @@ import {
   rToStringField,
   StringCField,
 } from '../src';
-import { buildInitialFetchDoc } from '../src/service/pure/initial-fetch-doc';
+import { buildGetDocStateCtxIfAbsent } from '../src/service/pure/initial-fetch-doc';
 
 export const pGetNewDocId = jest.fn<
   ReturnType<PGetNewDocId<PGetNewDocIdError>>,
@@ -205,7 +205,7 @@ export const createDoc = buildCreateDoc({
   spec,
 });
 
-const initialFetchDoc = buildInitialFetchDoc({
+const initialFetchDoc = buildGetDocStateCtxIfAbsent({
   buildDraft,
   cToField,
   docToR,

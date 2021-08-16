@@ -266,7 +266,7 @@ export type RToDocUnknownFieldNameError = {
 /**
  *
  */
-export type RToFieldContext = {
+export type RToFieldCtx = {
   readonly col: string;
   readonly field: Option<RField>;
   readonly fieldName: string;
@@ -276,7 +276,7 @@ export type RToFieldContext = {
  *
  */
 export type RToField<E extends RToDocError = RToDocError> = (param: {
-  readonly context: RToFieldContext;
+  readonly Ctx: RToFieldCtx;
   readonly fieldSpec: FieldSpec;
 }) => Either<E, Option<Field>>;
 
@@ -393,7 +393,7 @@ export function CToFieldNeverError(never: never): CToFieldNeverError {
 /**
  *
  */
-export type CToFieldContext = {
+export type CToFieldCtx = {
   readonly col: string;
   readonly field: Option<CField>;
   readonly fieldName: string;
@@ -409,7 +409,7 @@ export type CToFieldError = { readonly _errorType: 'CToFieldError' };
  *
  */
 export type CToField<E extends CToFieldError = CToFieldError> = (param: {
-  readonly context: CToFieldContext;
+  readonly Ctx: CToFieldCtx;
   readonly fieldSpec: FieldSpec;
 }) => Task<Either<E, Option<Field>>>;
 
@@ -438,29 +438,11 @@ export function InvalidTypeCToFieldError(
 /**
  *
  */
-export type KeyIsEmptyDocState = {
-  readonly state: 'KeyIsEmpty';
-};
-
-export function KeyIsEmptyDocState(): KeyIsEmptyDocState {
-  return { state: 'KeyIsEmpty' };
-}
 
 /**
- *
+ * Create DocError
  */
-export type InitializingDocState = {
-  readonly state: 'Initializing';
-};
-
-export function InitializingDocState(): InitializingDocState {
-  return { state: 'Initializing' };
-}
-
-/**
- *
- */
-export type PSetDocCreateDocError<PSDE extends PSetDocError = PSetDocError> = {
+export type PSetDocCreateDocError<PSDE extends PSetDocError> = {
   readonly _errorType: 'PSetDocError';
   readonly error: PSDE;
 };
@@ -470,44 +452,42 @@ export type UnknownColCreateDocError = {
   readonly col: string;
 };
 
-export type CToFieldCreateDocError<CTFE extends CToFieldError = CToFieldError> = {
+export type CToFieldCreateDocError<CTFE extends CToFieldError> = {
   readonly _errorType: 'CToFieldError';
   readonly err: CTFE;
 };
 
-export type PGetNewDocIdCreateDocError<PGNIE extends PGetNewDocIdError = PGetNewDocIdError> = {
+export type PGetNewDocIdCreateDocError<PGNIE extends PGetNewDocIdError> = {
   readonly _errorType: 'PGetNewDocIdError';
   readonly err: PGNIE;
 };
 
-export type CreateDocError = { readonly _errorType: string } & (
-  | PSetDocCreateDocError
+export type CreateDocError<
+  PSDE extends PSetDocError = PSetDocError,
+  CTFE extends CToFieldError = CToFieldError,
+  PGNIE extends PGetNewDocIdError = PGetNewDocIdError
+> = { readonly _errorType: string } & (
+  | PSetDocCreateDocError<PSDE>
   | UnknownColCreateDocError
-  | CToFieldCreateDocError
-  | PGetNewDocIdCreateDocError
+  | CToFieldCreateDocError<CTFE>
+  | PGetNewDocIdCreateDocError<PGNIE>
 );
 
-export function cToFieldCreateDocError<CTFE extends CToFieldError = CToFieldError>(
-  err: CTFE
-): CreateDocError {
+export function cToFieldCreateDocError<CTFE extends CToFieldError>(err: CTFE): CreateDocError {
   return { _errorType: 'CToFieldError', err };
 }
 
-export function pGetNewDocIdCreateDocError<PGNIE extends PGetNewDocIdError = PGetNewDocIdError>(
+export function pGetNewDocIdCreateDocError<PGNIE extends PGetNewDocIdError>(
   err: PGNIE
 ): CreateDocError {
   return { _errorType: 'PGetNewDocIdError', err };
 }
 
-export function unknownColCreateDocError(
-  value: Omit<UnknownColCreateDocError, '_errorType' | '_errorType2'>
-): CreateDocError {
-  return { _errorType: 'UnknownColError', ...value };
+export function unknownColCreateDocError(col: string): CreateDocError {
+  return { _errorType: 'UnknownColError', col };
 }
 
-export function pSetDocCreateDocError<PSDE extends PSetDocError = PSetDocError>(
-  error: PSDE
-): CreateDocError {
+export function pSetDocCreateDocError<PSDE extends PSetDocError>(error: PSDE): CreateDocError {
   return { _errorType: 'PSetDocError', error };
 }
 
@@ -521,69 +501,39 @@ export type CreateDoc = (p: {
 }) => Task<Either<CreateDocError, DocSnapshot>>;
 
 /**
- *
- */
-export type DocStateError = { readonly _errorType: 'DocStateError' };
-
-/**
- *
+ * DocStateError
  */
 export type CreateDocDocStateError<CDE extends CreateDocError> = {
-  readonly _errorType: 'DocStateError';
-  readonly _errorType2: 'CreateDoc';
+  readonly _errorType: 'CreateDocError';
   readonly createDocError: CDE;
 };
 
-export function CreateDocDocStateError<CDE extends CreateDocError>(
-  createDocError: CDE
-): CreateDocDocStateError<CDE> {
-  return {
-    _errorType: 'DocStateError',
-    _errorType2: 'CreateDoc',
-    createDocError,
-  };
-}
-
-/**
- *
- */
 export type PReadDocDocStateError<PRDE extends PReadDocError> = {
-  readonly _errorType: 'DocStateError';
-  readonly _errorType2: 'PReadDoc';
+  readonly _errorType: 'PReadDocError';
   readonly readDocError: PRDE;
 };
 
-export function PReadDocDocStateError<PRDE extends PReadDocError>(
-  readDocError: PRDE
-): PReadDocDocStateError<PRDE> {
-  return {
-    _errorType: 'DocStateError',
-    _errorType2: 'PReadDoc',
-    readDocError,
-  };
+export type DocStateError<
+  PRDE extends PReadDocError = PReadDocError,
+  CDE extends CreateDocError = CreateDocError
+> = {
+  readonly _errorType: string;
+} & (CreateDocDocStateError<CDE> | PReadDocDocStateError<PRDE>);
+
+export function createDocDocStateError<CDE extends CreateDocError>(
+  createDocError: CDE
+): DocStateError {
+  return { _errorType: 'CreateDocError', createDocError };
 }
 
-// /**
-//  *
-//  */
-// export type CToFieldDocStateError<CTFE extends CToFieldError> = {
-//   readonly _errorType: 'DocStateError';
-//   readonly _errorType2: 'CToField';
-//   readonly cToFieldError: CTFE;
-// };
-
-// export function CToFieldDocStateError<CTFE extends CToFieldError>(
-//   p: Omit<CToFieldDocStateError<CTFE>, '_errorType2' | '_errorType'>
-// ): CToFieldDocStateError<CTFE> {
-//   return {
-//     ...p,
-//     _errorType: 'DocStateError',
-//     _errorType2: 'CToField',
-//   };
-// }
+export function pReadDocDocStateError<PRDE extends PReadDocError>(
+  readDocError: PRDE
+): DocStateError {
+  return { _errorType: 'PReadDocError', readDocError };
+}
 
 /**
- *
+ * DocState
  */
 export type ContainsErrorDocState<E extends DocStateError> = {
   readonly error: Left<E>;
@@ -591,56 +541,33 @@ export type ContainsErrorDocState<E extends DocStateError> = {
   readonly state: 'ContainsError';
 };
 
-export function ContainsErrorDocState<E extends DocStateError>(
-  p: Omit<ContainsErrorDocState<E>, 'state'>
-): ContainsErrorDocState<E> {
-  return { ...p, state: 'ContainsError' };
-}
-
-/**
- *
- */
-export type NotExistsDocState<C extends CDoc = CDoc> = {
-  readonly create: (ocDocData: C) => void;
-  readonly state: 'NotExists';
-};
-
-export function NotExistsDocState<C extends CDoc>(
-  p: Omit<NotExistsDocState<C>, 'state'>
-): NotExistsDocState<C> {
-  return { ...p, state: 'NotExists' };
-}
-
-/**
- *
- */
 export type CreatingDocState = {
   readonly state: 'Creating';
 };
 
-export function CreatingDocState(): CreatingDocState {
-  return { state: 'Creating' };
-}
+export type InitializingDocState = {
+  readonly state: 'Initializing';
+};
 
-/**
- *
- */
-export type ReadyDocState<R extends RDoc = RDoc> = {
+export type KeyIsEmptyDocState = {
+  readonly state: 'KeyIsEmpty';
+};
+
+export type NotExistsDocState<C extends CDoc> = {
+  readonly create: (ocDocData: C) => void;
+  readonly state: 'NotExists';
+};
+
+export type ReadyDocState<R extends RDoc> = {
   readonly data: R;
   readonly id: string;
-  // readonly revalidate: () => void;
+  /**
+   * TODO
+   * readonly revalidate: () => void;
+   */
   readonly state: 'Ready';
 };
 
-export function ReadyDocState<R extends RDoc>(
-  p: Omit<ReadyDocState<R>, 'state'>
-): ReadyDocState<R> {
-  return { ...p, state: 'Ready' };
-}
-
-/**
- *
- */
 export type DocState<
   E extends DocStateError = DocStateError,
   R extends RDoc = RDoc,
@@ -656,6 +583,107 @@ export type DocState<
   | ReadyDocState<R>
 );
 
+export function containsErrorDocState<E extends DocStateError>(
+  p: Omit<ContainsErrorDocState<E>, 'state'>
+): ContainsErrorDocState<E> {
+  return { ...p, state: 'ContainsError' };
+}
+
+export function creatingDocState(): CreatingDocState {
+  return { state: 'Creating' };
+}
+
+export function initializingDocState(): InitializingDocState {
+  return { state: 'Initializing' };
+}
+
+export function keyIsEmptyDocState(): KeyIsEmptyDocState {
+  return { state: 'KeyIsEmpty' };
+}
+
+export function notExistsDocState<C extends CDoc>(
+  create: (ocDocData: C) => void
+): NotExistsDocState<C> {
+  return { create, state: 'NotExists' };
+}
+
+export function readyDocState<R extends RDoc>(
+  p: Omit<ReadyDocState<R>, 'state'>
+): ReadyDocState<R> {
+  return { ...p, state: 'Ready' };
+}
+
+/**
+ * DocStateCtx
+ */
+export type ContainsErrorDocStateCtx<E extends DocStateError> = {
+  readonly error: Left<E>;
+  readonly key: DocKey;
+  readonly state: 'ContainsError';
+};
+
+export type CreatingDocStateCtx = {
+  readonly state: 'Creating';
+};
+
+export type InitializingDocStateCtx = {
+  readonly state: 'Initializing';
+};
+
+export type KeyIsEmptyDocStateCtx = {
+  readonly state: 'KeyIsEmpty';
+};
+
+export type NotExistsDocStateCtx = {
+  readonly key: DocKey;
+  readonly state: 'NotExists';
+};
+
+export type ReadyDocStateCtx<R extends RDoc> = {
+  readonly data: R;
+  readonly id: string;
+  readonly state: 'Ready';
+};
+
+export type DocStateCtx<E extends DocStateError = DocStateError, R extends RDoc = RDoc> = {
+  readonly state: string;
+} & (
+  | ContainsErrorDocStateCtx<E>
+  | CreatingDocStateCtx
+  | InitializingDocStateCtx
+  | KeyIsEmptyDocStateCtx
+  | NotExistsDocStateCtx
+  | ReadyDocStateCtx<R>
+);
+
+export function containsErrorDocStateCtx<E extends DocStateError = DocStateError>(
+  key: DocKey
+): (error: Left<E>) => DocStateCtx {
+  return (error) => ({ error, key, state: 'ContainsError' });
+}
+
+export function creatingDocStateCtx(): DocStateCtx {
+  return { state: 'Creating' };
+}
+
+export function initializingDocStateCtx(): DocStateCtx {
+  return { state: 'Initializing' };
+}
+
+export function keyIsEmptyDocStateCtx(): DocStateCtx {
+  return { state: 'KeyIsEmpty' };
+}
+
+export function notExistsDocStateCtx(p: Omit<NotExistsDocStateCtx, 'state'>): DocStateCtx {
+  return { ...p, state: 'NotExists' };
+}
+
+export function readyDocStateCtx<R extends RDoc>(
+  p: Omit<ReadyDocStateCtx<R>, 'state'>
+): DocStateCtx {
+  return { ...p, state: 'Ready' };
+}
+
 /**
  *
  */
@@ -668,7 +696,7 @@ export type SetDocState<
 /**
  *
  */
-export type InitialFetchDoc = (key: DocKey, docState: Option<DocState>) => Task<DocState>;
+export type GetDocStateCtxIfAbsent = (key: DocKey) => Task<DocStateCtx>;
 
 /**
  *

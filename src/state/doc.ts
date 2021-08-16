@@ -1,24 +1,24 @@
 import { None, optionFold } from 'trimop';
 
 import { subscribeToDocState } from '../listenable/doc';
-import { InitialFetchDoc, InitializingDocState, MakeDocState } from '../type';
+import { GetDocStateCtxIfAbsent, initializingDocState, MakeDocState } from '../type';
 
 export function buildMakeDocState({
   initialFetchDoc,
 }: {
-  readonly initialFetchDoc: InitialFetchDoc;
+  readonly initialFetchDoc: GetDocStateCtxIfAbsent;
 }): MakeDocState {
   return (key) => ({
     effectOnInit: () => {
       initialFetchDoc(key);
       return None();
     },
-    initialState: InitializingDocState(),
+    initialState: initializingDocState(),
     subscribe: (listen) =>
       subscribeToDocState(key, (docState) =>
         optionFold(
           docState,
-          () => listen(InitializingDocState()),
+          () => listen(initializingDocState()),
           (docState) => listen(docState)
         )
       ),

@@ -41,7 +41,7 @@ import {
   DocState,
   DocToR,
   Listen,
-  ReadyDocState,
+  readyDocState,
   RToDoc,
   SetDocState,
   Unsubscribe,
@@ -140,7 +140,7 @@ function runTrigger<S extends TriggerSnapshot>({
                         oeMap((newDoc) =>
                           _(newDoc)
                             ._(docToR)
-                            ._((data) => _setDocState({ col, id }, ReadyDocState({ data, id })))
+                            ._((data) => _setDocState({ col, id }, readyDocState({ data, id })))
                             ._val()
                         )
                       )

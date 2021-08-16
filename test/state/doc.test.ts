@@ -1,7 +1,7 @@
 /* eslint-disable functional/no-let */
 import { None, Right } from 'trimop';
 
-import { CreatingDocState, DocState, InitializingDocState, NotExistsDocState } from '../../src';
+import { creatingDocState, DocState, initializingDocState, notExistsDocState } from '../../src';
 import { makeDocState, MemeImageCDoc, pReadDoc, pSetDoc } from '../generated';
 
 function sleep(milli: number): Promise<unknown> {
@@ -24,23 +24,23 @@ describe('DocState', () => {
     const docState = makeDocState({ col: 'memeImage', id: 'memeImage1' });
     const unsubscribe = docState.subscribe(mockedDocListen);
 
-    expect(memeImageState).toStrictEqual(InitializingDocState());
+    expect(memeImageState).toStrictEqual(initializingDocState());
 
     const unsubscribeEffect = docState.effectOnInit();
     await sleep(100);
 
     expect(unsubscribeEffect).toStrictEqual(None());
-    expect(memeImageState).toStrictEqual(NotExistsDocState({ create: expect.any(Function) }));
+    expect(memeImageState).toStrictEqual(notExistsDocState({ create: expect.any(Function) }));
     expect(pReadDoc).toHaveBeenCalledTimes(1);
     expect(pSetDoc).toHaveBeenCalledTimes(0);
 
     (memeImageState as NotExistsDocState<MemeImageCDoc>).create({
       image: 'https://',
     });
-    expect(memeImageState).toStrictEqual(CreatingDocState());
+    expect(memeImageState).toStrictEqual(creatingDocState());
     await sleep(500);
     expect(pReadDoc).toHaveBeenCalledTimes(1);
-    expect(memeImageState).toStrictEqual(CreatingDocState());
+    expect(memeImageState).toStrictEqual(creatingDocState());
     expect(pSetDoc).toHaveBeenCalledTimes(1);
 
     unsubscribe();
