@@ -25,7 +25,7 @@ export function buildRToDoc(spec: Spec, rToField: RToField): RToDoc {
           (acc, [fieldName, fieldSpec]) =>
             eitherMapRight(
               rToField({
-                context: { col, field: optionFromNullable<RField>(rDoc[fieldName]), fieldName },
+                ctx: { col, field: optionFromNullable<RField>(rDoc[fieldName]), fieldName },
                 fieldSpec,
               }),
               (field) =>

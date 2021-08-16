@@ -29,8 +29,10 @@ export type DB = Dict<Listenable<unknown>>;
 /**
  *
  */
-export type InvalidKeyError = {
-  readonly key: string;
+export type QueryKey = {
+  readonly limit?: number;
+  readonly orderByField?: string;
+  readonly orderDirection?: 'asc' | 'desc';
 };
 
 /**
@@ -121,16 +123,7 @@ export type PQueryError = { readonly _errorType: 'PQueryError' };
 /**
  *
  */
-export type QueryKey = {
-  readonly limit?: number;
-  readonly orderByField?: string;
-  readonly orderDirection?: 'asc' | 'desc';
-};
-
-/**
- *
- */
-export type PQuery<E extends PQueryError, DBC = unknown> = (param: {
+export type PQuery<E extends PQueryError = PQueryError, DBC = unknown> = (param: {
   readonly col: string;
   readonly key: QueryKey;
   readonly latestCursor?: DBC;
@@ -149,7 +142,7 @@ export type PUploadImageError = { readonly _errorType: 'PUploadImageError' };
 /**
  *
  */
-export type PUploadImage<E extends PUploadImageError> = (args: {
+export type PUploadImage<E extends PUploadImageError = PUploadImageError> = (args: {
   readonly col: string;
   readonly fieldName: string;
   readonly file: File;
@@ -158,23 +151,25 @@ export type PUploadImage<E extends PUploadImageError> = (args: {
 
 /**
  *
+ * RField
+ *
  */
+export type StringRField = string;
+
+export type NumberRField = string;
+
+export type DateRField = Date;
+
 export type ImageRField = {
   readonly url: string;
 };
 
-/**
- *
- */
 export type RefRField = {
   readonly _id: string;
   // eslint-disable-next-line no-use-before-define
 } & RDoc;
 
-/**
- *
- */
-export type RField = string | number | Date | ImageRField | RefRField;
+export type RField = StringRField | NumberRField | DateRField | ImageRField | RefRField;
 
 /**
  *
@@ -183,85 +178,42 @@ export type RDoc = Dict<RField>;
 
 /**
  *
- */
-export type RToDocError = { readonly _errorType: 'RToDocError' };
-
-/**
+ * RToDocError
  *
  */
 export type InvalidTypeRToDocError = {
-  readonly _errorType: 'RToDocError';
-  readonly _errorType2: 'InvalidTypeRToDocError';
+  readonly _errorType: 'InvalidTypeError';
   readonly col: string;
   readonly field: unknown;
   readonly fieldName: string;
   readonly message?: string;
 };
 
-export function InvalidTypeRToDocError(
-  p: Omit<InvalidTypeRToDocError, '_errorType2' | '_errorType'>
-): InvalidTypeRToDocError {
+export type NeverRToDocError = {
+  readonly _errorType: 'NeverError';
+  readonly never: unknown;
+};
+
+export type RToDocError = InvalidTypeRToDocError | NeverRToDocError;
+
+export function invalidTypeRToDocError(p: {
+  readonly col: string;
+  readonly field: unknown;
+  readonly fieldName: string;
+  readonly message?: string;
+}): RToDocError {
   return {
     ...p,
-    _errorType: 'RToDocError',
-    _errorType2: 'InvalidTypeRToDocError',
+    _errorType: 'InvalidTypeError',
   };
 }
 
-/**
- *
- */
-export type RToFieldNeverError = {
-  readonly _errorType: 'RToDocError';
-  readonly _errorType2: 'NeverError';
-  readonly never: never;
-};
-
-export function RToFieldNeverError(never: never): RToFieldNeverError {
+export function neverRToFieldError(never: unknown): NeverRToDocError {
   return {
-    _errorType: 'RToDocError',
-    _errorType2: 'NeverError',
+    _errorType: 'NeverError',
     never,
   };
 }
-
-/**
- *
- */
-export function RToDocUnknownColError(
-  value: Omit<RToDocUnknownColError, '_errorType' | '_errorType2'>
-): RToDocUnknownColError {
-  return {
-    _errorType: 'RToDocError',
-    _errorType2: 'UnknownColError',
-    ...value,
-  };
-}
-
-export type RToDocUnknownColError = {
-  readonly _errorType: 'RToDocError';
-  readonly _errorType2: 'UnknownColError';
-  readonly col: string;
-};
-
-/**
- *
- */
-export function RToDocUnknownFieldNameError(
-  value: Omit<RToDocUnknownFieldNameError, '_errorType' | '_errorType2'>
-): RToDocUnknownFieldNameError {
-  return {
-    _errorType: 'RToDocError',
-    _errorType2: 'UnknownFieldNameError',
-    ...value,
-  };
-}
-
-export type RToDocUnknownFieldNameError = {
-  readonly _errorType: 'RToDocError';
-  readonly _errorType2: 'UnknownFieldNameError';
-  readonly fieldName: string;
-};
 
 /**
  *
@@ -275,7 +227,7 @@ export type RToFieldCtx = {
 /**
  *
  */
-export type RToField<E extends RToDocError = RToDocError> = (param: {
+export type RToField<E extends RToDocError> = (param: {
   readonly Ctx: RToFieldCtx;
   readonly fieldSpec: FieldSpec;
 }) => Either<E, Option<Field>>;
@@ -295,22 +247,15 @@ export type DocToR = (doc: Doc) => RDoc;
 
 /**
  *
+ * CField
+ *
  */
 export type StringCField = string;
 
-/**
- *
- */
 export type ImageCField = File | string;
 
-/**
- *
- */
 export type RefCField = RefRField;
 
-/**
- *
- */
 export type CField = StringCField | ImageCField | RefCField;
 
 /**
@@ -320,73 +265,83 @@ export type CDoc = Dict<CField>;
 
 /**
  *
+ * CToFieldError
+ *
  */
-export type CToFieldUploadImageError<PUIE extends PUploadImageError> = {
-  readonly _errorType: 'CToFieldError';
-  readonly _errorType2: 'UploadImageError';
+export type UploadImageCToFieldError<PUIE extends PUploadImageError> = {
+  readonly _errorType: 'UploadImageError';
   readonly uploadImageError: PUIE;
 };
 
-export function CToFieldUploadImageError<PUIE extends PUploadImageError>(
-  providerError: PUIE
-): CToFieldUploadImageError<PUIE> {
-  return {
-    _errorType: 'CToFieldError',
-    _errorType2: 'UploadImageError',
-    uploadImageError: providerError,
-  };
-}
-
-/**
- *
- */
-export type CToFieldUserNotSignedInError = {
-  readonly _errorType: 'CToFieldError';
-  readonly _errorType2: 'UserNotSignedInError';
+export type UserNotSignedInCToFieldError = {
+  readonly _errorType: 'UserNotSignedInError';
   readonly signInRequired: string;
 };
 
-export function CToFieldUserNotSignedInError(
-  p: Omit<CToFieldUserNotSignedInError, '_errorType' | '_errorType2'>
-): CToFieldUserNotSignedInError {
-  return {
-    ...p,
-    _errorType: 'CToFieldError',
-    _errorType2: 'UserNotSignedInError',
-  };
-}
-
-/**
- *
- */
-export type CToFieldRToDocError = {
-  readonly _errorType: 'CToFieldError';
-  readonly _errorType2: 'RToDocError';
+export type RToDocCToFieldError = {
+  readonly _errorType: 'RToDocError';
   readonly rToDocError: RToDocError;
 };
 
-export function CToFieldRToDocError(rToDocError: RToDocError): CToFieldRToDocError {
+export type NeverCToFieldError = {
+  readonly _errorType: 'NeverError';
+  readonly never: never;
+};
+
+export type InvalidTypeCToFieldError = {
+  readonly _errorType: 'InvalidTypeCToFieldError';
+  readonly col: string;
+  readonly field: unknown;
+  readonly fieldName: string;
+  readonly message?: string;
+};
+
+export type CToFieldError<PUIE extends PUploadImageError = PUploadImageError> =
+  | UploadImageCToFieldError<PUIE>
+  | UserNotSignedInCToFieldError
+  | RToDocCToFieldError
+  | NeverCToFieldError
+  | InvalidTypeCToFieldError;
+
+export function uploadImageCToFieldError<PUIE extends PUploadImageError>(
+  uploadImageError: PUIE
+): UploadImageCToFieldError<PUIE> {
   return {
-    _errorType: 'CToFieldError',
-    _errorType2: 'RToDocError',
+    _errorType: 'UploadImageError',
+    uploadImageError,
+  };
+}
+
+export function userNotSignedInCToFieldError(signInRequired: string): UserNotSignedInCToFieldError {
+  return {
+    _errorType: 'UserNotSignedInError',
+    signInRequired,
+  };
+}
+
+export function rToDocCToFieldError(rToDocError: RToDocError): RToDocCToFieldError {
+  return {
+    _errorType: 'RToDocError',
     rToDocError,
   };
 }
 
-/**
- *
- */
-export type CToFieldNeverError = {
-  readonly _errorType: 'CToFieldError';
-  readonly _errorType2: 'NeverError';
-  readonly never: never;
-};
-
-export function CToFieldNeverError(never: never): CToFieldNeverError {
+export function neverCToFieldError(never: never): NeverCToFieldError {
   return {
-    _errorType: 'CToFieldError',
-    _errorType2: 'NeverError',
+    _errorType: 'NeverError',
     never,
+  };
+}
+
+export function invalidTypeCToFieldError(p: {
+  readonly col: string;
+  readonly field: unknown;
+  readonly fieldName: string;
+  readonly message?: string;
+}): InvalidTypeCToFieldError {
+  return {
+    ...p,
+    _errorType: 'InvalidTypeCToFieldError',
   };
 }
 
@@ -403,44 +358,15 @@ export type CToFieldCtx = {
 /**
  *
  */
-export type CToFieldError = { readonly _errorType: 'CToFieldError' };
-
-/**
- *
- */
-export type CToField<E extends CToFieldError = CToFieldError> = (param: {
+export type CToField<E extends CToFieldError> = (param: {
   readonly Ctx: CToFieldCtx;
   readonly fieldSpec: FieldSpec;
 }) => Task<Either<E, Option<Field>>>;
 
 /**
- * InvalidCreationFieldTypeError
- */
-export type InvalidTypeCToFieldError = {
-  readonly _errorType: 'CToFieldError';
-  readonly _errorType2: 'InvalidTypeCToFieldError';
-  readonly col: string;
-  readonly field: unknown;
-  readonly fieldName: string;
-  readonly message?: string;
-};
-
-export function InvalidTypeCToFieldError(
-  p: Omit<InvalidTypeCToFieldError, '_errorType2' | '_errorType'>
-): InvalidTypeCToFieldError {
-  return {
-    ...p,
-    _errorType: 'CToFieldError',
-    _errorType2: 'InvalidTypeCToFieldError',
-  };
-}
-
-/**
  *
- */
-
-/**
- * Create DocError
+ * CreateDocError
+ *
  */
 export type PSetDocCreateDocError<PSDE extends PSetDocError> = {
   readonly _errorType: 'PSetDocError';
@@ -501,7 +427,9 @@ export type CreateDoc = (p: {
 }) => Task<Either<CreateDocError, DocSnapshot>>;
 
 /**
+ *
  * DocStateError
+ *
  */
 export type CreateDocDocStateError<CDE extends CreateDocError> = {
   readonly _errorType: 'CreateDocError';
@@ -533,7 +461,9 @@ export function pReadDocDocStateError<PRDE extends PReadDocError>(
 }
 
 /**
+ *
  * DocState
+ *
  */
 export type ContainsErrorDocState<E extends DocStateError> = {
   readonly error: Left<E>;
@@ -583,9 +513,10 @@ export type DocState<
   | ReadyDocState<R>
 );
 
-export function containsErrorDocState<E extends DocStateError>(
-  p: Omit<ContainsErrorDocState<E>, 'state'>
-): ContainsErrorDocState<E> {
+export function containsErrorDocState<E extends DocStateError>(p: {
+  readonly error: Left<E>;
+  readonly revalidate: () => void;
+}): ContainsErrorDocState<E> {
   return { ...p, state: 'ContainsError' };
 }
 
@@ -607,14 +538,17 @@ export function notExistsDocState<C extends CDoc>(
   return { create, state: 'NotExists' };
 }
 
-export function readyDocState<R extends RDoc>(
-  p: Omit<ReadyDocState<R>, 'state'>
-): ReadyDocState<R> {
+export function readyDocState<R extends RDoc>(p: {
+  readonly data: R;
+  readonly id: string;
+}): ReadyDocState<R> {
   return { ...p, state: 'Ready' };
 }
 
 /**
+ *
  * DocStateCtx
+ *
  */
 export type ContainsErrorDocStateCtx<E extends DocStateError> = {
   readonly error: Left<E>;
@@ -656,7 +590,7 @@ export type DocStateCtx<E extends DocStateError = DocStateError, R extends RDoc 
   | ReadyDocStateCtx<R>
 );
 
-export function containsErrorDocStateCtx<E extends DocStateError = DocStateError>(
+export function containsErrorDocStateCtx<E extends DocStateError>(
   key: DocKey
 ): (error: Left<E>) => DocStateCtx {
   return (error) => ({ error, key, state: 'ContainsError' });
@@ -674,13 +608,14 @@ export function keyIsEmptyDocStateCtx(): DocStateCtx {
   return { state: 'KeyIsEmpty' };
 }
 
-export function notExistsDocStateCtx(p: Omit<NotExistsDocStateCtx, 'state'>): DocStateCtx {
-  return { ...p, state: 'NotExists' };
+export function notExistsDocStateCtx(key: DocKey): DocStateCtx {
+  return { key, state: 'NotExists' };
 }
 
-export function readyDocStateCtx<R extends RDoc>(
-  p: Omit<ReadyDocStateCtx<R>, 'state'>
-): DocStateCtx {
+export function readyDocStateCtx<R extends RDoc>(p: {
+  readonly data: R;
+  readonly id: string;
+}): DocStateCtx {
   return { ...p, state: 'Ready' };
 }
 
@@ -714,18 +649,13 @@ export type AuthStateError = { readonly _errorType: 'AuthStateError' };
 
 /**
  *
+ * Auth State
+ *
  */
 export type InitializingAuthState = {
   readonly state: 'initializing';
 };
 
-export function InitializingAuthState(): InitializingAuthState {
-  return { state: 'initializing' };
-}
-
-/**
- * SignedIn
- */
 export type SignedInAuthState<E extends AuthStateError, URD extends RDoc> = {
   readonly error?: Left<E>;
   readonly signOut: () => void;
@@ -734,48 +664,18 @@ export type SignedInAuthState<E extends AuthStateError, URD extends RDoc> = {
   readonly userId: string;
 };
 
-export function SignedInAuthState<E extends AuthStateError, URD extends RDoc>(
-  p: Omit<SignedInAuthState<E, URD>, 'state'>
-): SignedInAuthState<E, URD> {
-  return { ...p, state: 'signedIn' };
-}
-
-/**
- *
- */
 export type LoadingUserDataAuthState = {
   readonly signOut: () => void;
   readonly state: 'loadingUserData';
   readonly userId: string;
 };
 
-export function LoadingUserDataAuthState(
-  p: Omit<LoadingUserDataAuthState, 'state'>
-): LoadingUserDataAuthState {
-  return { ...p, state: 'loadingUserData' };
-}
-
-/**
- *
- */
 export type SignedOutAuthState<E extends AuthStateError, SIO> = {
   readonly error?: Left<E>;
   readonly signIn: (option: SIO) => void;
   readonly state: 'signedOut';
 };
 
-export function SignedOutAuthState<E extends AuthStateError, SIO>(
-  p: Omit<SignedOutAuthState<E, SIO>, 'state'>
-): SignedOutAuthState<E, SIO> {
-  return {
-    ...p,
-    state: 'signedOut',
-  };
-}
-
-/**
- *
- */
 export type AuthState<
   ASE extends AuthStateError = AuthStateError,
   SIO = unknown,
@@ -786,6 +686,36 @@ export type AuthState<
   | LoadingUserDataAuthState
   | SignedInAuthState<ASE, URD>;
 
+export function InitializingAuthState(): InitializingAuthState {
+  return { state: 'initializing' };
+}
+
+export function signedInAuthState<E extends AuthStateError, URD extends RDoc>(p: {
+  readonly error?: Left<E>;
+  readonly signOut: () => void;
+  readonly user: URD;
+  readonly userId: string;
+}): SignedInAuthState<E, URD> {
+  return { ...p, state: 'signedIn' };
+}
+
+export function loadingUserDataAuthState(p: {
+  readonly signOut: () => void;
+  readonly userId: string;
+}): LoadingUserDataAuthState {
+  return { ...p, state: 'loadingUserData' };
+}
+
+export function signedOutAuthState<E extends AuthStateError, SIO>(p: {
+  readonly error?: Left<E>;
+  readonly signIn: (option: SIO) => void;
+}): SignedOutAuthState<E, SIO> {
+  return {
+    ...p,
+    state: 'signedOut',
+  };
+}
+
 /**
  *
  */
@@ -795,10 +725,3 @@ export type GetAuthState = () => Option<AuthState>;
  *
  */
 export type MakeDocState = (key: DocKey) => State<DocState>;
-
-/**
- *
- */
-export type CreateContainsErrorDocState<DSE extends DocStateError = DocStateError> = (
-  key: DocKey
-) => (left: Left<DSE>) => DocState;

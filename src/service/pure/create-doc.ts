@@ -60,7 +60,7 @@ export function buildCreateDoc({
                       _(cDoc)
                         ._(dLookup(fieldName))
                         ._((field) => ({ col, field, fieldName, id }))
-                        ._((context) => cToField({ context, fieldSpec }))
+                        ._((ctx) => cToField({ ctx, fieldSpec }))
                         ._(tMap((field) => DEntry(fieldName, field)))
                         ._val()
                     )

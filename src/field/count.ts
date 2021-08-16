@@ -3,31 +3,31 @@ import { Either, Left, None, Right, Some } from 'trimop';
 
 import { _, oGetOrElse, oMap, Task, toRightSome } from '../trimop/pipe';
 import {
-  CToFieldContext,
+  CToFieldCtx,
   CToFieldError,
-  InvalidTypeCToFieldError,
-  InvalidTypeRToDocError,
+  invalidTypeCToFieldError,
+  invalidTypeRToDocError,
   RToDocError,
-  RToFieldContext,
+  RToFieldCtx,
 } from '../type';
 
 export function cToCountField({
-  context: { field, fieldName, col },
+  ctx: { field, fieldName, col },
 }: {
-  readonly context: CToFieldContext;
+  readonly ctx: CToFieldCtx;
   readonly fieldSpec: CountFieldSpec;
 }): Task<Either<CToFieldError, None>> {
   return _(field)
-    ._(oMap(() => Left(InvalidTypeCToFieldError({ col, field, fieldName }))))
+    ._(oMap(() => Left(invalidTypeCToFieldError({ col, field, fieldName }))))
     ._(oGetOrElse<Either<CToFieldError, None>>(() => Right(None())))
     ._(Task)
     ._val();
 }
 
 export function rToCountField({
-  context: { fieldName, field, col },
+  ctx: { fieldName, field, col },
 }: {
-  readonly context: RToFieldContext;
+  readonly ctx: RToFieldCtx;
   readonly fieldSpec: CountFieldSpec;
 }): Either<RToDocError, Some<NumberField>> {
   return _(field)
@@ -35,12 +35,12 @@ export function rToCountField({
       oMap((field) =>
         typeof field === 'number'
           ? _(NumberField(field))._(toRightSome)._val()
-          : _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left)._val()
+          : _(invalidTypeRToDocError({ col, field, fieldName }))._(Left)._val()
       )
     )
     ._(
       oGetOrElse<Either<RToDocError, Some<NumberField>>>(() =>
-        _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left)._val()
+        _(invalidTypeRToDocError({ col, field, fieldName }))._(Left)._val()
       )
     )
     ._val();

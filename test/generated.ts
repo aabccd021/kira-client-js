@@ -12,7 +12,7 @@ import {
   cToCountField,
   cToCreationTimeField,
   CToField,
-  CToFieldNeverError,
+  neverCToFieldError,
   cToImageField,
   cToRefField,
   cToStringField,
@@ -31,7 +31,7 @@ import {
   rToCountField,
   rToCreationTimeField,
   RToField,
-  RToFieldNeverError,
+  neverRToFieldError,
   rToImageField,
   rToRefField,
   rToStringField,
@@ -138,55 +138,55 @@ const spec: Spec = {
   },
 };
 
-const rToField: RToField = ({ context, fieldSpec }) => {
+const rToField: RToField = ({ ctx, fieldSpec }) => {
   if (fieldSpec._type === 'Image') {
-    return rToImageField({ context, fieldSpec });
+    return rToImageField({ ctx, fieldSpec });
   }
   if (fieldSpec._type === 'String') {
-    return rToStringField({ context, fieldSpec });
+    return rToStringField({ ctx, fieldSpec });
   }
   if (fieldSpec._type === 'Ref') {
-    return rToRefField({ context, fieldSpec, rToDoc });
+    return rToRefField({ ctx, fieldSpec, rToDoc });
   }
   if (fieldSpec._type === 'Count') {
-    return rToCountField({ context, fieldSpec });
+    return rToCountField({ ctx, fieldSpec });
   }
   if (fieldSpec._type === 'CreationTime') {
-    return rToCreationTimeField({ context, fieldSpec });
+    return rToCreationTimeField({ ctx, fieldSpec });
   }
-  return Left(RToFieldNeverError(fieldSpec));
+  return Left(neverRToFieldError(fieldSpec));
 };
 
 const rToDoc = buildRToDoc(spec, rToField);
 
-const cToField: CToField = async ({ context, fieldSpec }) => {
+const cToField: CToField = async ({ ctx, fieldSpec }) => {
   if (fieldSpec._type === 'Image') {
-    return cToImageField({ context, fieldSpec, getAuthState, pUploadImage });
+    return cToImageField({ ctx, fieldSpec, getAuthState, pUploadImage });
   }
   if (fieldSpec._type === 'String') {
-    return cToStringField({ context, fieldSpec });
+    return cToStringField({ ctx, fieldSpec });
   }
   if (fieldSpec._type === 'Ref') {
-    return cToRefField({ context, fieldSpec, getAuthState, rToDoc });
+    return cToRefField({ ctx, fieldSpec, getAuthState, rToDoc });
   }
   if (fieldSpec._type === 'Count') {
-    return cToCountField({ context, fieldSpec });
+    return cToCountField({ ctx, fieldSpec });
   }
   if (fieldSpec._type === 'CreationTime') {
-    return cToCreationTimeField({ context, fieldSpec });
+    return cToCreationTimeField({ ctx, fieldSpec });
   }
-  return Left(CToFieldNeverError(fieldSpec));
+  return Left(neverCToFieldError(fieldSpec));
 };
 
-const buildDraft: BuildDraft = ({ spec, context }) => {
+const buildDraft: BuildDraft = ({ spec, ctx }) => {
   if (spec._type === 'Count') {
-    return buildCountDraft({ context, spec });
+    return buildCountDraft({ ctx, spec });
   }
   if (spec._type === 'Ref') {
-    return buildRefDraft({ context, spec });
+    return buildRefDraft({ ctx, spec });
   }
   if (spec._type === 'CreationTime') {
-    return buildCreationTimeDraft({ context, spec });
+    return buildCreationTimeDraft({ ctx, spec });
   }
   return None();
 };

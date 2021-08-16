@@ -3,18 +3,18 @@ import { Either, Left, Right, Some } from 'trimop';
 
 import { _, oGetOrElse, oMap, Task, toRightSome } from '../trimop/pipe';
 import {
-  CToFieldContext,
+  CToFieldCtx,
   CToFieldError,
-  InvalidTypeCToFieldError,
-  InvalidTypeRToDocError,
+  invalidTypeCToFieldError,
+  invalidTypeRToDocError,
   RToDocError,
-  RToFieldContext,
+  RToFieldCtx,
 } from '../type';
 
 export function cToStringField({
-  context: { fieldName, col, field },
+  ctx: { fieldName, col, field },
 }: {
-  readonly context: CToFieldContext;
+  readonly ctx: CToFieldCtx;
   readonly fieldSpec: StringFieldSpec;
 }): Task<Either<CToFieldError, Some<StringField>>> {
   return _(field)
@@ -22,12 +22,12 @@ export function cToStringField({
       oMap((field) =>
         typeof field === 'string'
           ? Right(Some(StringField(field)))
-          : Left(InvalidTypeCToFieldError({ col, field, fieldName }))
+          : Left(invalidTypeCToFieldError({ col, field, fieldName }))
       )
     )
     ._(
       oGetOrElse<Either<CToFieldError, Some<StringField>>>(() =>
-        Left(InvalidTypeCToFieldError({ col, field, fieldName }))
+        Left(invalidTypeCToFieldError({ col, field, fieldName }))
       )
     )
     ._(Task)
@@ -35,9 +35,9 @@ export function cToStringField({
 }
 
 export function rToStringField({
-  context: { fieldName, field, col },
+  ctx: { fieldName, field, col },
 }: {
-  readonly context: RToFieldContext;
+  readonly ctx: RToFieldCtx;
   readonly fieldSpec: StringFieldSpec;
 }): Either<RToDocError, Some<StringField>> {
   return _(field)
@@ -45,12 +45,12 @@ export function rToStringField({
       oMap((field) =>
         typeof field === 'string'
           ? _(StringField(field))._(toRightSome)._val()
-          : _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left)._val()
+          : _(invalidTypeRToDocError({ col, field, fieldName }))._(Left)._val()
       )
     )
     ._(
       oGetOrElse<Either<RToDocError, Some<StringField>>>(() =>
-        _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left)._val()
+        _(invalidTypeRToDocError({ col, field, fieldName }))._(Left)._val()
       )
     )
     ._val();

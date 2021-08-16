@@ -4,18 +4,18 @@ import { Either, Left, Option } from 'trimop';
 import { _, eMap, eMapLeft, oGetOrElse, oMap, Task } from '../trimop/pipe';
 import {
   CField,
-  CToFieldContext,
+  CToFieldCtx,
   CToFieldError,
   CToFieldRToDocError,
   CToFieldUserNotSignedInError,
   GetAuthState,
-  InvalidTypeCToFieldError,
-  InvalidTypeRToDocError,
+  invalidTypeCToFieldError,
+  invalidTypeRToDocError,
   RefRField,
   RField,
   RToDoc,
   RToDocError,
-  RToFieldContext,
+  RToFieldCtx,
 } from '../type';
 
 function isRefRField(field: RField | CField | undefined): field is RefRField {
@@ -37,12 +37,12 @@ function isRefRField(field: RField | CField | undefined): field is RefRField {
 
 //TODO: Owner field for better tree shaking
 export function cToRefField({
-  context: { fieldName, col, field },
+  ctx: { fieldName, col, field },
   fieldSpec,
   getAuthState,
   rToDoc,
 }: {
-  readonly context: CToFieldContext;
+  readonly ctx: CToFieldCtx;
   readonly fieldSpec: RefFieldSpec;
   readonly getAuthState: GetAuthState;
   readonly rToDoc: RToDoc;
@@ -89,14 +89,14 @@ export function cToRefField({
               )
               ._(eMapLeft(CToFieldRToDocError))
               ._val()
-          : _(InvalidTypeCToFieldError({ col, field: rDoc, fieldName }))
+          : _(invalidTypeCToFieldError({ col, field: rDoc, fieldName }))
               ._(Left)
               ._val()
       )
     )
     ._(
       oGetOrElse<Either<CToFieldError, Option<RefField>>>(() =>
-        _(InvalidTypeCToFieldError({ col, field, fieldName }))._(Left)._val()
+        _(invalidTypeCToFieldError({ col, field, fieldName }))._(Left)._val()
       )
     )
     ._(Task)
@@ -104,10 +104,10 @@ export function cToRefField({
 }
 
 export function rToRefField({
-  context: { fieldName, field, col },
+  ctx: { fieldName, field, col },
   rToDoc,
 }: {
-  readonly context: RToFieldContext;
+  readonly ctx: RToFieldCtx;
   readonly fieldSpec: RefFieldSpec;
   readonly rToDoc: RToDoc;
 }): Either<RToDocError, Option<RefField>> {
@@ -124,12 +124,12 @@ export function rToRefField({
                 )
               )
               ._val()
-          : _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left)._val()
+          : _(invalidTypeRToDocError({ col, field, fieldName }))._(Left)._val()
       )
     )
     ._(
       oGetOrElse<Either<RToDocError, Option<RefField>>>(() =>
-        _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left)._val()
+        _(invalidTypeRToDocError({ col, field, fieldName }))._(Left)._val()
       )
     )
     ._val();
