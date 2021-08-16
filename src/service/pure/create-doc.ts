@@ -49,8 +49,8 @@ export function buildCreateDoc({
       ._(
         oMap((colSpec) =>
           _(givenId)
-            ._(oMap((t) => _(t)._(toTaskRight).value()))
-            ._(oToSome(() => _({ col })._(pGetNewDocId).value()))
+            ._(oMap((t) => _(t)._(toTaskRight)._val()))
+            ._(oToSome(() => _({ col })._(pGetNewDocId)._val()))
             ._(
               teMap((id) =>
                 _(colSpec)
@@ -61,7 +61,7 @@ export function buildCreateDoc({
                         ._((field) => ({ col, field, fieldName, id }))
                         ._((context) => cToField({ context, fieldSpec }))
                         ._(tMap((field) => DEntry(fieldName, field)))
-                        .value()
+                        ._val()
                     )
                   )
                   ._(tParallel)
@@ -70,17 +70,17 @@ export function buildCreateDoc({
                   ._(teMap(doCompact))
                   ._(teMap((doc) => ({ doc, id })))
                   ._<Task<Either<CreateDocError, DocSnapshot>>>(teMapLeft(CToFieldCreateDocError))
-                  .value()
+                  ._val()
               )
             )
             ._(teMapLeft(PGetNewDocIdCreateDocError))
             ._(teFlatten)
-            .value()
+            ._val()
         )
       )
       ._(
         oToSome<Task<Either<CreateDocError, DocSnapshot>>>(() =>
-          _(UnknownColCreateDocError({ col }))._(toTaskLeft).value()
+          _(UnknownColCreateDocError({ col }))._(toTaskLeft)._val()
         )
       )
       ._(
@@ -94,9 +94,9 @@ export function buildCreateDoc({
           )
             ._(teMap(() => snapshot))
             ._(teMapLeft(PSetDocCreateDocError))
-            .value()
+            ._val()
         )
       )
       ._(teFlatten)
-      .value();
+      ._val();
 }

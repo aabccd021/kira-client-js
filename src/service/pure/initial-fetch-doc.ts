@@ -73,14 +73,14 @@ export function buildInitialFetchDoc<PRDE extends PReadDocError>({
                   ? _(remoteDoc.data)
                       ._(docToR)
                       ._((data) => ReadyDocState({ data, id: key.id }))
-                      .value()
+                      ._val()
                   : createNotExistsDocState(key)
               )
             )
             ._(teMapLeft(PReadDocDocStateError))
             ._(teToRight(createContainsErrorDocState(key)))
-            .value()
+            ._val()
         )
       )
-      .value();
+      ._val();
 }

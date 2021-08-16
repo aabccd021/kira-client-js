@@ -58,9 +58,9 @@ export function buildCreateContainsErrorDocState({
             _(newDocState)
               ._(tMap(setDocState(key)))
               ._(tDo)
-              .value()
+              ._val()
           )
-          .value();
+          ._val();
       },
     });
 }

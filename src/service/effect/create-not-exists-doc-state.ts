@@ -75,7 +75,7 @@ export function buildCreateNotExistsDocState({
           ._(teToRight(createContainsErrorDocState(key)))
           ._(tMap(setDocState(key)))
           ._(tDo)
-          .value();
+          ._val();
       },
     });
 }

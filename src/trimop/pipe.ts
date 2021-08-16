@@ -1,72 +1,29 @@
 /* eslint-disable import/exports-last */
 import { Either, isLeft, isNone, isRight, isSome, Left, None, Option, Right, Some } from 'trimop';
 
-export type C<T> = {
-  readonly _: <TResult>(mapper: (t: T) => TResult) => C<TResult>;
-  readonly value: () => T;
+export type Pipep<T> = {
+  readonly _: <TResult>(mapper: (t: T) => TResult) => Pipep<TResult>;
+  readonly _val: () => T;
 };
 
-export function Chainable<T>(t: () => T): C<T> {
+export function _<T>(t: T): Pipep<T> {
   return {
-    _: (mapper) => Chainable(() => mapper(t())),
-    value: t,
+    _: (mapper) => _(mapper(t)),
+    _val: () => t,
   };
 }
 
-export function _<T>(t: T): C<T> {
-  return {
-    _: (mapper) => Chainable(() => mapper(t)),
-    value: () => t,
-  };
-}
-
-export type K<TR, T> = {
-  readonly _: <TR2>(mapper: (t: T) => TR) => K<TR2, TR>;
-  readonly value: (p: T) => TR;
+export type Flow<TPrev, TInit> = {
+  readonly _: <TNext>(mapper: (t: TPrev) => TNext) => Flow<TNext, TInit>;
+  readonly _val: (p: TInit) => TPrev;
 };
 
-export function K<TR, T>(mapper: (t: TR) => TR2): K<TR, T> {
+export function flow<TEnd, TInit>(mapper: (t: TInit) => TEnd): Flow<TEnd, TInit> {
   return {
-    _: (mapper2) => K(mapper2(mapper)),
-    value: mapper,
+    _: (nextMapper) => flow((z) => nextMapper(mapper(z))),
+    _val: mapper,
   };
 }
-
-export type Z<TPrev, TInit> = {
-  readonly _: <TNext>(mapper: (t: TPrev) => TNext) => Z<TNext, TInit>;
-  readonly value: (p: TInit) => TPrev;
-};
-
-export function ZM<TEnd, TInit>(mapper: (t: TInit) => TEnd): Z<TEnd, TInit> {
-  return {
-    _: (mapper) => mapper(),
-    value: 
-  };
-}
-
-const raaaaaaaa: (p: string) => boolean = ZM<number, string>((a) => a.length)._((x) => x > 0).value;
-const raaaaa: (p: string) => number = ZM<number, string>((a) => a.length).value;
-
-const x = K<number, string>((a) => a.length)._((x) => x > 0).value;
-
-// export type Z<TR, T> = {
-//   readonly _: <TR2>(mapper: (t: TR) => TR2) => Z<TR, T>;
-//   readonly eval: (t: T) => TR;
-// };
-
-// export function ZZ<TR, T>(mapper: (t: T) => TR): Z<TR, T> {
-//   return {
-//     _: mapper,
-//     eval: mapper,
-//   };
-// }
-
-// ZZ
-// (eMap<boolean, string, number>((num) => num !== 0))._(eMapLeft((x) => Left(x.left.length))).eval;
-
-// export function c<TR, T>(m: C<(t: T) => TR>): (t: T) => TR {
-//   return (t) => m.eval()(t);
-// }
 
 export type LeftTo<EResult, E> = (l: Left<E>) => Left<EResult>;
 
@@ -282,19 +239,19 @@ export function dReduce<TR, T>(
 // }
 
 export function toTaskRight<T>(t: T): Task<Right<T>> {
-  return _(t)._(Right)._(Task).value();
+  return _(t)._(Right)._(Task)._val();
 }
 
 export function toTaskRightSome<T>(t: T): Task<Right<Some<T>>> {
-  return _(t)._(Some)._(toTaskRight).value();
+  return _(t)._(Some)._(toTaskRight)._val();
 }
 
 export function toRightSome<T>(t: T): Right<Some<T>> {
-  return _(t)._(Some)._(Right).value();
+  return _(t)._(Some)._(Right)._val();
 }
 
 export function toTaskLeft<T>(t: T): Task<Left<T>> {
-  return _(t)._(Left)._(Task).value();
+  return _(t)._(Left)._(Task)._val();
 }
 
 export function bind<A, B>(mapper: (b: B) => A): (t: B) => readonly [B, A] {
@@ -408,10 +365,10 @@ export function deCompact<E, T>(de: Dict<Either<E, NonNullable<T>>>): Either<E, 
           ._(bind(() => value))
           ._(eCompact2)
           ._(eMap2((acc, value) => ({ ...acc, [key]: value })))
-          .value()
+          ._val()
       )
     )
-    .value();
+    ._val();
 }
 
 export function doCompact<T>(d: Dict<Option<NonNullable<T>>>): Dict<T> {
@@ -421,13 +378,13 @@ export function doCompact<T>(d: Dict<Option<NonNullable<T>>>): Dict<T> {
         isNone(field) ? acc : { ...acc, [fieldName]: field.value }
       )
     )
-    .value();
+    ._val();
 }
 
 export function teFlatten<E, T>(e: Task<Either<E, Task<Either<E, T>>>>): Task<Either<E, T>> {
   return _(e)
     ._(tMap((e) => (isLeft(e) ? Task(e) : e.right)))
     ._(tFlatten)
-    .value();
+    ._val();
   // if (isLeft(e) {e : () => e.right().then((r) => r))).value()
 }

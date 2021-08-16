@@ -39,7 +39,7 @@ export function cToImageField<PUIE extends PUploadImageError>({
         typeof field === 'string'
           ? _(ImageField({ url: field }))
               ._(toTaskRightSome)
-              .value()
+              ._val()
           : field instanceof File
           ? _(pUploadImage({ col, fieldName, file: field, id }))
               ._(
@@ -49,23 +49,23 @@ export function cToImageField<PUIE extends PUploadImageError>({
                       eMap((uploadResult) =>
                         _(ImageField({ url: uploadResult.downloadUrl }))
                           ._(Some)
-                          .value()
+                          ._val()
                       )
                     )
                     ._(eMapLeft(CToFieldUploadImageError))
-                    .value()
+                    ._val()
                 )
               )
-              .value()
-          : _(InvalidTypeCToFieldError({ col, field, fieldName }))._(toTaskLeft).value()
+              ._val()
+          : _(InvalidTypeCToFieldError({ col, field, fieldName }))._(toTaskLeft)._val()
       )
     )
     ._(
       oToSome<Task<Either<CToFieldError, Some<ImageField>>>>(() =>
-        _(InvalidTypeCToFieldError({ col, field, fieldName }))._(toTaskLeft).value()
+        _(InvalidTypeCToFieldError({ col, field, fieldName }))._(toTaskLeft)._val()
       )
     )
-    .value();
+    ._val();
 }
 
 export function rToImageField({
@@ -78,14 +78,14 @@ export function rToImageField({
     ._(
       oMap((field) =>
         isImageFieldValue(field)
-          ? _(ImageField(field))._(toRightSome).value()
-          : _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left).value()
+          ? _(ImageField(field))._(toRightSome)._val()
+          : _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left)._val()
       )
     )
     ._(
       oToSome<Either<RToDocError, Some<ImageField>>>(() =>
-        _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left).value()
+        _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left)._val()
       )
     )
-    .value();
+    ._val();
 }

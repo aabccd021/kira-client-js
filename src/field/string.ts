@@ -31,7 +31,7 @@ export function cToStringField({
       )
     )
     ._(Task)
-    .value();
+    ._val();
 }
 
 export function rToStringField({
@@ -44,14 +44,14 @@ export function rToStringField({
     ._(
       oMap((field) =>
         typeof field === 'string'
-          ? _(StringField(field))._(toRightSome).value()
-          : _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left).value()
+          ? _(StringField(field))._(toRightSome)._val()
+          : _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left)._val()
       )
     )
     ._(
       oToSome<Either<RToDocError, Some<StringField>>>(() =>
-        _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left).value()
+        _(InvalidTypeRToDocError({ col, field, fieldName }))._(Left)._val()
       )
     )
-    .value();
+    ._val();
 }
