@@ -1,7 +1,7 @@
 import { isImageFieldValue, RefField, RefFieldSpec } from 'kira-core';
 import { Either, Left, Option, Some } from 'trimop';
 
-import { _, eMap, eMapLeft, oeGetOrElse, oGetOrElse, oMap, Task } from '../trimop/pipe';
+import { _, eMap, eMapLeft, oeGetOrLeft, oMap, Task } from '../trimop/pipe';
 import {
   CField,
   CToFieldCtx,
@@ -60,11 +60,7 @@ export function cToRefField({
                     : Left(userNotSignedInCToFieldErr(`create ${col} doc`))
                 )
               )
-              ._(
-                oGetOrElse<Either<CToFieldErr, Some<RefField>>>(() =>
-                  Left(userNotSignedInCToFieldErr(`create ${col} doc`))
-                )
-              )
+              ._(oeGetOrLeft(() => userNotSignedInCToFieldErr(`create ${col} doc`)))
               ._val()
           : isRefRField(rDoc)
           ? _(rDoc)
@@ -75,7 +71,7 @@ export function cToRefField({
           : Left(invalidTypeCToFieldErr({ col, field: rDoc, fieldName }))
       )
     )
-    ._(oeGetOrElse(() => invalidTypeCToFieldErr({ col, field, fieldName })))
+    ._(oeGetOrLeft(() => invalidTypeCToFieldErr({ col, field, fieldName })))
     ._(Task)
     ._val();
 }
@@ -99,10 +95,6 @@ export function rToRefField({
           : Left(invalidTypeRToDocErr({ col, field, fieldName }))
       )
     )
-    ._(
-      oGetOrElse<Either<RToDocErr, Option<RefField>>>(() =>
-        Left(invalidTypeRToDocErr({ col, field, fieldName }))
-      )
-    )
+    ._(oeGetOrLeft(() => invalidTypeRToDocErr({ col, field, fieldName })))
     ._val();
 }

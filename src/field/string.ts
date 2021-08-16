@@ -1,7 +1,7 @@
 import { StringField, StringFieldSpec } from 'kira-core';
 import { Either, Left, Some } from 'trimop';
 
-import { _, oGetOrElse, oMap, Task, toRightSome } from '../trimop/pipe';
+import { _, oeGetOrLeft, oMap, Task, toRightSome } from '../trimop/pipe';
 import {
   CToFieldCtx,
   CToFieldErr,
@@ -25,11 +25,7 @@ export function cToStringField({
           : Left(invalidTypeCToFieldErr({ col, field, fieldName }))
       )
     )
-    ._(
-      oGetOrElse<Either<CToFieldErr, Some<StringField>>>(() =>
-        Left(invalidTypeCToFieldErr({ col, field, fieldName }))
-      )
-    )
+    ._(oeGetOrLeft(() => invalidTypeCToFieldErr({ col, field, fieldName })))
     ._(Task)
     ._val();
 }
@@ -48,10 +44,6 @@ export function rToStringField({
           : Left(invalidTypeRToDocErr({ col, field, fieldName }))
       )
     )
-    ._(
-      oGetOrElse<Either<RToDocErr, Some<StringField>>>(() =>
-        Left(invalidTypeRToDocErr({ col, field, fieldName }))
-      )
-    )
+    ._(oeGetOrLeft(() => invalidTypeRToDocErr({ col, field, fieldName })))
     ._val();
 }

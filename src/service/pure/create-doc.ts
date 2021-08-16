@@ -1,5 +1,4 @@
-import { DocSnapshot, Spec } from 'kira-core';
-import { Either } from 'trimop';
+import { Spec } from 'kira-core';
 
 import { docSnapshot } from '../../core';
 import {
@@ -12,9 +11,8 @@ import {
   doCompact,
   oGetOrElse,
   oMap,
-  Task,
+  oteGetOrLeft,
   teChain,
-  teLeft,
   teMap,
   teMapLeft,
   teRight,
@@ -23,7 +21,6 @@ import {
 } from '../../trimop/pipe';
 import {
   CreateDoc,
-  CreateDocErr,
   CToField,
   cToFieldCreateDocErr,
   cToFieldCtx,
@@ -79,11 +76,7 @@ export function buildCreateDoc({
             ._val()
         )
       )
-      ._(
-        oGetOrElse<Task<Either<CreateDocErr, DocSnapshot>>>(() =>
-          _(col)._(unknownColCreateDocErr)._(teLeft)._val()
-        )
-      )
+      ._(oteGetOrLeft(() => unknownColCreateDocErr(col)))
       ._(
         teChain((snapshot) =>
           _(

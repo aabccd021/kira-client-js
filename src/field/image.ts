@@ -5,8 +5,9 @@ import {
   _,
   eMap,
   eMapLeft,
-  oGetOrElse,
+  oeGetOrLeft,
   oMap,
+  oteGetOrLeft,
   Task,
   teLeft,
   tMap,
@@ -52,11 +53,7 @@ export function cToImageField<PUIE extends PUploadImageErr>({
           : teLeft(invalidTypeCToFieldErr({ col, field, fieldName }))
       )
     )
-    ._(
-      oGetOrElse<Task<Either<CToFieldErr, Some<ImageField>>>>(() =>
-        teLeft(invalidTypeCToFieldErr({ col, field, fieldName }))
-      )
-    )
+    ._(oteGetOrLeft(() => invalidTypeCToFieldErr({ col, field, fieldName })))
     ._val();
 }
 
@@ -74,10 +71,6 @@ export function rToImageField({
           : Left(invalidTypeRToDocErr({ col, field, fieldName }))
       )
     )
-    ._(
-      oGetOrElse<Either<RToDocErr, Some<ImageField>>>(() =>
-        Left(invalidTypeRToDocErr({ col, field, fieldName }))
-      )
-    )
+    ._(oeGetOrLeft(() => invalidTypeRToDocErr({ col, field, fieldName })))
     ._val();
 }

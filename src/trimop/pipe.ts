@@ -105,12 +105,19 @@ export function oGetOrElse<T>(mapper: () => T): OGetOrElse<T> {
   return (option) => (isNone(option) ? mapper() : option.value);
 }
 
-export type OEFold<E, T> = (oe: Option<Either<E, T>>) => Either<E, T>;
+export type OEGetOrElse<E, T> = (oe: Option<Either<E, T>>) => Either<E, T>;
 
-export function oeGetOrElse<E, T>(mapper: () => E): OEFold<E, T> {
-  return (option) =>
-    _(option)
+export function oeGetOrLeft<E, T>(mapper: () => E): OEGetOrElse<E, T> {
+  return (oe) =>
+    _(oe)
       ._(oGetOrElse<Either<E, T>>(() => Left(mapper())))
+      ._val();
+}
+
+export function oeGetOrRight<E, T>(mapper: () => T): OEGetOrElse<E, T> {
+  return (oe) =>
+    _(oe)
+      ._(oGetOrElse<Either<E, T>>(() => Right(mapper())))
       ._val();
 }
 
@@ -288,6 +295,22 @@ export function toRightSome<T>(t: T): Right<Some<T>> {
 
 export function teLeft<T>(t: T): Task<Left<T>> {
   return _(t)._(Left)._(Task)._val();
+}
+
+export type OTEGetOrElse<E, T> = (ote: Option<Task<Either<E, T>>>) => Task<Either<E, T>>;
+
+export function oteGetOrLeft<E, T>(mapper: () => E): OTEGetOrElse<E, T> {
+  return (option) =>
+    _(option)
+      ._(oGetOrElse<Task<Either<E, T>>>(() => teLeft(mapper())))
+      ._val();
+}
+
+export function oteGetOrRight<E, T>(mapper: () => T): OTEGetOrElse<E, T> {
+  return (option) =>
+    _(option)
+      ._(oGetOrElse<Task<Either<E, T>>>(() => teRight(mapper())))
+      ._val();
 }
 
 export function bind2<T, A>(mapper: (b: A) => T): (t: A) => readonly [A, T] {

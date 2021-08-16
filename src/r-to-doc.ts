@@ -1,5 +1,4 @@
-import { Doc, Spec } from 'kira-core';
-import { Either, Left } from 'trimop';
+import { Spec } from 'kira-core';
 
 import {
   _,
@@ -9,13 +8,13 @@ import {
   dMapValues,
   doCompact,
   eMap,
-  oGetOrElse,
+  oeGetOrLeft,
   oMap,
 } from './trimop/pipe';
-import { RToDoc, RToDocErr, RToField, rToFieldCtx, unknownColRToDocErr } from './type';
+import { RToDoc, RToField, rToFieldCtx, unknownColRToDocErr } from './type';
 
 export function buildRToDoc(spec: Spec, rToField: RToField): RToDoc {
-  return (col, rDoc) =>
+  return (col) => (rDoc) =>
     _(spec)
       ._(dLookup(col))
       ._(
@@ -36,6 +35,6 @@ export function buildRToDoc(spec: Spec, rToField: RToField): RToDoc {
             ._val()
         )
       )
-      ._(oGetOrElse<Either<RToDocErr, Doc>>(() => _(col)._(unknownColRToDocErr)._(Left)._val()))
+      ._(oeGetOrLeft(() => unknownColRToDocErr(col)))
       ._val();
 }
