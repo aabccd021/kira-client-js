@@ -12,7 +12,7 @@ import {
   cToCountField,
   cToCreationTimeField,
   CToField,
-  neverCToFieldError,
+  neverCToFieldErr,
   cToImageField,
   cToRefField,
   cToStringField,
@@ -21,17 +21,17 @@ import {
   ImageCField,
   ImageRField,
   PGetNewDocId,
-  PGetNewDocIdError,
+  PGetNewDocIdErr,
   PReadDoc,
-  PReadDocError,
+  PReadDocErr,
   PSetDoc,
-  PSetDocError,
+  PSetDocErr,
   PUploadImage,
-  PUploadImageError,
+  PUploadImageErr,
   rToCountField,
   rToCreationTimeField,
   RToField,
-  neverRToFieldError,
+  neverRToFieldErr,
   rToImageField,
   rToRefField,
   rToStringField,
@@ -40,19 +40,19 @@ import {
 import { buildGetDocStateCtxIfAbsent } from '../src/service/pure/initial-fetch-doc';
 
 export const pGetNewDocId = jest.fn<
-  ReturnType<PGetNewDocId<PGetNewDocIdError>>,
-  Parameters<PGetNewDocId<PGetNewDocIdError>>
+  ReturnType<PGetNewDocId<PGetNewDocIdErr>>,
+  Parameters<PGetNewDocId<PGetNewDocIdErr>>
 >();
 
 export const pSetDoc = jest.fn<
-  ReturnType<PSetDoc<PSetDocError>>,
-  Parameters<PSetDoc<PSetDocError>>
+  ReturnType<PSetDoc<PSetDocErr>>,
+  Parameters<PSetDoc<PSetDocErr>>
 >();
 
-export const pUploadImage: PUploadImage<PUploadImageError> = jest.fn();
+export const pUploadImage: PUploadImage<PUploadImageErr> = jest.fn();
 export const pReadDoc = jest.fn<
-  ReturnType<PReadDoc<PReadDocError>>,
-  Parameters<PReadDoc<PReadDocError>>
+  ReturnType<PReadDoc<PReadDocErr>>,
+  Parameters<PReadDoc<PReadDocErr>>
 >();
 
 const spec: Spec = {
@@ -154,7 +154,7 @@ const rToField: RToField = ({ ctx, fieldSpec }) => {
   if (fieldSpec._type === 'CreationTime') {
     return rToCreationTimeField({ ctx, fieldSpec });
   }
-  return Left(neverRToFieldError(fieldSpec));
+  return Left(neverRToFieldErr(fieldSpec));
 };
 
 const rToDoc = buildRToDoc(spec, rToField);
@@ -175,7 +175,7 @@ const cToField: CToField = async ({ ctx, fieldSpec }) => {
   if (fieldSpec._type === 'CreationTime') {
     return cToCreationTimeField({ ctx, fieldSpec });
   }
-  return Left(neverCToFieldError(fieldSpec));
+  return Left(neverCToFieldErr(fieldSpec));
 };
 
 const buildDraft: BuildDraft = ({ spec, ctx }) => {

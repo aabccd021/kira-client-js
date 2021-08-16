@@ -4,7 +4,7 @@ import {
   BuildDraft,
   ColTrigger,
   DocChange,
-  DraftGetTransactionCommitError,
+  DraftGetTransactionCommitErr,
   GetDoc,
   getTransactionCommit,
   TriggerSnapshot,
@@ -108,7 +108,7 @@ function runTrigger<S extends TriggerSnapshot>({
   readonly docToR: DocToR;
   readonly rToDoc: RToDoc;
   readonly snapshot: S;
-}): Task<Either<DraftGetTransactionCommitError, unknown>> {
+}): Task<Either<DraftGetTransactionCommitErr, unknown>> {
   // TODO: GetDoc = Option<Doc>
   return _<GetDoc>(async (key) =>
     _(key)

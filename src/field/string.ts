@@ -1,13 +1,13 @@
 import { StringField, StringFieldSpec } from 'kira-core';
-import { Either, Left, Right, Some } from 'trimop';
+import { Either, Left, Some } from 'trimop';
 
 import { _, oGetOrElse, oMap, Task, toRightSome } from '../trimop/pipe';
 import {
   CToFieldCtx,
-  CToFieldError,
-  invalidTypeCToFieldError,
-  invalidTypeRToDocError,
-  RToDocError,
+  CToFieldErr,
+  invalidTypeCToFieldErr,
+  invalidTypeRToDocErr,
+  RToDocErr,
   RToFieldCtx,
 } from '../type';
 
@@ -16,18 +16,18 @@ export function cToStringField({
 }: {
   readonly ctx: CToFieldCtx;
   readonly fieldSpec: StringFieldSpec;
-}): Task<Either<CToFieldError, Some<StringField>>> {
+}): Task<Either<CToFieldErr, Some<StringField>>> {
   return _(field)
     ._(
       oMap((field) =>
         typeof field === 'string'
-          ? Right(Some(StringField(field)))
-          : Left(invalidTypeCToFieldError({ col, field, fieldName }))
+          ? _(field)._(StringField)._(toRightSome)._val()
+          : Left(invalidTypeCToFieldErr({ col, field, fieldName }))
       )
     )
     ._(
-      oGetOrElse<Either<CToFieldError, Some<StringField>>>(() =>
-        Left(invalidTypeCToFieldError({ col, field, fieldName }))
+      oGetOrElse<Either<CToFieldErr, Some<StringField>>>(() =>
+        Left(invalidTypeCToFieldErr({ col, field, fieldName }))
       )
     )
     ._(Task)
@@ -39,18 +39,18 @@ export function rToStringField({
 }: {
   readonly ctx: RToFieldCtx;
   readonly fieldSpec: StringFieldSpec;
-}): Either<RToDocError, Some<StringField>> {
+}): Either<RToDocErr, Some<StringField>> {
   return _(field)
     ._(
       oMap((field) =>
         typeof field === 'string'
-          ? _(StringField(field))._(toRightSome)._val()
-          : _(invalidTypeRToDocError({ col, field, fieldName }))._(Left)._val()
+          ? _(field)._(StringField)._(toRightSome)._val()
+          : Left(invalidTypeRToDocErr({ col, field, fieldName }))
       )
     )
     ._(
-      oGetOrElse<Either<RToDocError, Some<StringField>>>(() =>
-        _(invalidTypeRToDocError({ col, field, fieldName }))._(Left)._val()
+      oGetOrElse<Either<RToDocErr, Some<StringField>>>(() =>
+        Left(invalidTypeRToDocErr({ col, field, fieldName }))
       )
     )
     ._val();

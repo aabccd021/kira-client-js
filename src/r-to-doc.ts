@@ -11,17 +11,17 @@ import {
   Right,
 } from 'trimop';
 
-import { RField, RToDoc, RToDocError, RToDocUnknownCollectionNameError, RToField } from './type';
+import { RField, RToDoc, RToDocErr, RToDocUnknownCollectionNameErr, RToField } from './type';
 
 export function buildRToDoc(spec: Spec, rToField: RToField): RToDoc {
   return (col, rDoc) =>
     optionFold(
       optionFromNullable(spec[col]),
-      () => Left(RToDocUnknownCollectionNameError({ col })) as Either<RToDocError, Option<Doc>>,
+      () => Left(RToDocUnknownCollectionNameErr({ col })) as Either<RToDocErr, Option<Doc>>,
       (colSpec) =>
         eitherArrayReduce(
           Object.entries(colSpec).filter(([fieldName]) => fieldName[0] !== '_'),
-          Right(None()) as Either<RToDocError, Option<Doc>>,
+          Right(None()) as Either<RToDocErr, Option<Doc>>,
           (acc, [fieldName, fieldSpec]) =>
             eitherMapRight(
               rToField({

@@ -4,8 +4,8 @@
 // import { buildSetDocState, getDocState } from '../../listenable/doc';
 // import { _, bind, bind2, tDo, tMap } from '../../trimop/pipe';
 // import {
-//   ContainsErrorDocState,
-//   CreateContainsErrorDocState,
+//   ContainsErrDocState,
+//   CreateContainsErrDocState,
 //   CToField,
 //   DocToR,
 //   PGetNewDocId,
@@ -16,7 +16,7 @@
 // // eslint-disable-next-line import/no-cycle
 // import { buildInitialFetchDoc } from '../pure/initial-fetch-doc';
 
-// export function buildCreateContainsErrorDocState({
+// export function buildCreateContainsErrDocState({
 //   buildDraft,
 //   cToField,
 //   docToR,
@@ -34,7 +34,7 @@
 //   readonly pSetDoc: PSetDoc;
 //   readonly rToDoc: RToDoc;
 //   readonly spec: Spec;
-// }): CreateContainsErrorDocState {
+// }): CreateContainsErrDocState {
 //   const initialFetchDoc = buildInitialFetchDoc({
 //     buildDraft,
 //     cToField,
@@ -48,7 +48,7 @@
 
 //   const setDocState = buildSetDocState({ buildDraft, docToR, rToDoc, spec });
 //   return (key) => (error) =>
-//     ContainsErrorDocState({
+//     ContainsErrDocState({
 //       error,
 //       revalidate: () => {
 //         _(key)

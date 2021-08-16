@@ -2,13 +2,13 @@ import {
   DocToR,
   GetDocStateCtxIfAbsent,
   PReadDoc,
-  pReadDocDocStateError,
-  PReadDocError,
+  pReadDocDocStateErr,
+  PReadDocErr,
 } from '../..';
 import { _, teGetOrElse, teMap, teMapLeft } from '../../trimop/pipe';
-import { containsErrorDocStateCtx, notExistsDocStateCtx, readyDocStateCtx } from '../../type';
+import { containsErrDocStateCtx, notExistsDocStateCtx, readyDocStateCtx } from '../../type';
 
-export function buildGetDocStateCtxIfAbsent<PRDE extends PReadDocError>({
+export function buildGetDocStateCtxIfAbsent<PRDE extends PReadDocErr>({
   pReadDoc,
   docToR,
 }: {
@@ -28,7 +28,7 @@ export function buildGetDocStateCtxIfAbsent<PRDE extends PReadDocError>({
             : notExistsDocStateCtx({ key })
         )
       )
-      ._(teMapLeft(pReadDocDocStateError))
-      ._(teGetOrElse(containsErrorDocStateCtx(key)))
+      ._(teMapLeft(pReadDocDocStateErr))
+      ._(teGetOrElse(containsErrDocStateCtx(key)))
       ._val();
 }

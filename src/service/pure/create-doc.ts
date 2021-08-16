@@ -22,14 +22,14 @@ import {
 } from '../../trimop/pipe';
 import {
   CreateDoc,
-  CreateDocError,
+  CreateDocErr,
   CToField,
-  cToFieldCreateDocError,
+  cToFieldCreateDocErr,
   PGetNewDocId,
-  pGetNewDocIdCreateDocError,
+  pGetNewDocIdCreateDocErr,
   PSetDoc,
-  pSetDocCreateDocError,
-  unknownColCreateDocError,
+  pSetDocCreateDocErr,
+  unknownColCreateDocErr,
 } from '../../type';
 
 export function buildCreateDoc({
@@ -51,7 +51,7 @@ export function buildCreateDoc({
           _(givenId)
             ._(oMap((t) => _(t)._(teRight)._val()))
             ._(oGetOrElse(() => _({ col })._(pGetNewDocId)._val()))
-            ._(teMapLeft(pGetNewDocIdCreateDocError))
+            ._(teMapLeft(pGetNewDocIdCreateDocErr))
             ._(
               teChain((id) =>
                 _(colSpec)
@@ -68,7 +68,7 @@ export function buildCreateDoc({
                   ._(tParallel)
                   ._(tMap(dFromEntry))
                   ._(tMap(deCompact))
-                  ._(teMapLeft(cToFieldCreateDocError))
+                  ._(teMapLeft(cToFieldCreateDocErr))
                   ._(teMap(doCompact))
                   ._(teMap((doc) => ({ doc, id })))
                   ._val()
@@ -78,8 +78,8 @@ export function buildCreateDoc({
         )
       )
       ._(
-        oGetOrElse<Task<Either<CreateDocError, DocSnapshot>>>(() =>
-          _(unknownColCreateDocError({ col }))._(teLeft)._val()
+        oGetOrElse<Task<Either<CreateDocErr, DocSnapshot>>>(() =>
+          _(unknownColCreateDocErr({ col }))._(teLeft)._val()
         )
       )
       ._(
@@ -91,7 +91,7 @@ export function buildCreateDoc({
               spec,
             })
           )
-            ._(teMapLeft(pSetDocCreateDocError))
+            ._(teMapLeft(pSetDocCreateDocErr))
             ._(teMap(() => snapshot))
             ._val()
         )

@@ -5,7 +5,7 @@
 // import {
 //   buildCreateDoc,
 //   buildSetDocState,
-//   CreateDocDocStateError,
+//   CreateDocDocStateErr,
 //   CreateNotExistsDocState,
 //   CreatingDocState,
 //   CToField,
@@ -19,7 +19,7 @@
 // } from '../..';
 // import { _, doEffect, tDo, teGetOrElse, teMap, teMapLeft, tMap } from '../../trimop/pipe';
 // // eslint-disable-next-line import/no-cycle
-// import { buildCreateContainsErrorDocState } from './create-contains-error-doc-state';
+// import { buildCreateContainsErrDocState } from './create-contains-error-doc-state';
 
 // export function buildCreateNotExistsDocState({
 //   buildDraft,
@@ -41,7 +41,7 @@
 //   readonly spec: Spec;
 // }): CreateNotExistsDocState {
 //   const setDocState = buildSetDocState({ buildDraft, docToR, rToDoc, spec });
-//   const createContainsErrorDocState = buildCreateContainsErrorDocState({
+//   const createContainsErrDocState = buildCreateContainsErrDocState({
 //     buildDraft,
 //     cToField,
 //     docToR,
@@ -71,8 +71,8 @@
 //           )
 //           ._(teMap(({ doc, id }) => ({ data: docToR(doc), id })))
 //           ._(teMap(ReadyDocState))
-//           ._(teMapLeft(CreateDocDocStateError))
-//           ._(teGetOrElse(createContainsErrorDocState(key)))
+//           ._(teMapLeft(CreateDocDocStateErr))
+//           ._(teGetOrElse(createContainsErrDocState(key)))
 //           ._(tMap(setDocState(key)))
 //           ._(tDo)
 //           ._val();
