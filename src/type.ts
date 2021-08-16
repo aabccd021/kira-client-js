@@ -1,4 +1,4 @@
-import { Doc, DocKey, DocSnapshot, Field, FieldSpec, Spec } from 'kira-core';
+import { Doc, DocKey, DocSnapshot, Field, FieldSpec } from 'kira-core';
 import { Dict, Either, Left, Option } from 'trimop';
 
 import { Task } from './trimop/pipe';
@@ -89,9 +89,9 @@ export type PGetNewDocIdErr = { readonly _errorType: 'PGetNewDocIdErr' };
 /**
  *
  */
-export type PGetNewDocId<E extends PGetNewDocIdErr = PGetNewDocIdErr> = (p: {
-  readonly col: string;
-}) => Task<Either<E, string>>;
+export type PGetNewDocId<E extends PGetNewDocIdErr = PGetNewDocIdErr> = (
+  col: string
+) => Task<Either<E, string>>;
 
 /**
  *
@@ -104,7 +104,6 @@ export type PSetDocErr = { readonly _errorType: 'PSetDocErr' };
 export type PSetDoc<E extends PSetDocErr = PSetDocErr, R = unknown> = (param: {
   readonly doc: Doc;
   readonly key: DocKey;
-  readonly spec: Spec;
 }) => Task<Either<E, R>>;
 
 /**
@@ -355,13 +354,20 @@ export type CToFieldCtx = {
   readonly id: string;
 };
 
+export function cToFieldCtx(p: {
+  readonly col: string;
+  readonly fieldName: string;
+  readonly id: string;
+}): (field: Option<CField>) => CToFieldCtx {
+  return (field) => ({ ...p, field });
+}
+
 /**
  *
  */
-export type CToField<E extends CToFieldErr> = (param: {
-  readonly Ctx: CToFieldCtx;
-  readonly fieldSpec: FieldSpec;
-}) => Task<Either<E, Option<Field>>>;
+export type CToField<E extends CToFieldErr = CToFieldErr> = (
+  fieldSpec: FieldSpec
+) => (ctx: CToFieldCtx) => Task<Either<E, Option<Field>>>;
 
 /**
  *
@@ -601,11 +607,8 @@ export function notExistsDocStateCtx(key: DocKey): DocStateCtx {
   return { key, state: 'NotExists' };
 }
 
-export function readyDocStateCtx<R extends RDoc>(p: {
-  readonly data: R;
-  readonly id: string;
-}): DocStateCtx {
-  return { ...p, state: 'Ready' };
+export function readyDocStateCtx<R extends RDoc>(id: string): (data: R) => DocStateCtx {
+  return (data) => ({ data, id, state: 'Ready' });
 }
 
 /**

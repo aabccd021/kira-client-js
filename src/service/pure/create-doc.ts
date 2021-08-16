@@ -1,10 +1,11 @@
 import { DocSnapshot, Spec } from 'kira-core';
 import { Either } from 'trimop';
 
+import { docSnapshot } from '../../core';
 import {
   _,
   deCompact,
-  DEntry,
+  dEntry,
   dFromEntry,
   dLookup,
   dMap,
@@ -25,6 +26,7 @@ import {
   CreateDocErr,
   CToField,
   cToFieldCreateDocErr,
+  cToFieldCtx,
   PGetNewDocId,
   pGetNewDocIdCreateDocErr,
   PSetDoc,
@@ -49,8 +51,8 @@ export function buildCreateDoc({
       ._(
         oMap((colSpec) =>
           _(givenId)
-            ._(oMap((t) => _(t)._(teRight)._val()))
-            ._(oGetOrElse(() => _({ col })._(pGetNewDocId)._val()))
+            ._(oMap(teRight))
+            ._(oGetOrElse(() => pGetNewDocId(col)))
             ._(teMapLeft(pGetNewDocIdCreateDocErr))
             ._(
               teChain((id) =>
@@ -59,9 +61,9 @@ export function buildCreateDoc({
                     dMap((fieldSpec, fieldName) =>
                       _(cDoc)
                         ._(dLookup(fieldName))
-                        ._((field) => ({ col, field, fieldName, id }))
-                        ._((ctx) => cToField({ ctx, fieldSpec }))
-                        ._(tMap((field) => DEntry(fieldName, field)))
+                        ._(cToFieldCtx({ col, fieldName, id }))
+                        ._(cToField(fieldSpec))
+                        ._(tMap(dEntry(fieldName)))
                         ._val()
                     )
                   )
@@ -70,7 +72,7 @@ export function buildCreateDoc({
                   ._(tMap(deCompact))
                   ._(teMapLeft(cToFieldCreateDocErr))
                   ._(teMap(doCompact))
-                  ._(teMap((doc) => ({ doc, id })))
+                  ._(teMap(docSnapshot(id)))
                   ._val()
               )
             )
@@ -79,7 +81,7 @@ export function buildCreateDoc({
       )
       ._(
         oGetOrElse<Task<Either<CreateDocErr, DocSnapshot>>>(() =>
-          _(unknownColCreateDocErr({ col }))._(teLeft)._val()
+          _(col)._(unknownColCreateDocErr)._(teLeft)._val()
         )
       )
       ._(
@@ -88,7 +90,6 @@ export function buildCreateDoc({
             pSetDoc({
               doc: snapshot.doc,
               key: { col, id: snapshot.id },
-              spec,
             })
           )
             ._(teMapLeft(pSetDocCreateDocErr))
