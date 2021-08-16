@@ -16,13 +16,13 @@ import {
 import {
   CToFieldCtx,
   CToFieldErr,
-  CToFieldUploadImageErr,
   invalidTypeCToFieldErr,
   invalidTypeRToDocErr,
   PUploadImage,
   PUploadImageErr,
   RToDocErr,
   RToFieldCtx,
+  uploadImageCToFieldErr,
 } from '../type';
 
 export function cToImageField<PUIE extends PUploadImageErr>({
@@ -37,32 +37,24 @@ export function cToImageField<PUIE extends PUploadImageErr>({
     ._(
       oMap((field) =>
         typeof field === 'string'
-          ? _(ImageField({ url: field }))
-              ._(toTaskRightSome)
-              ._val()
+          ? toTaskRightSome(ImageField({ url: field }))
           : field instanceof File
           ? _(pUploadImage({ col, fieldName, file: field, id }))
               ._(
                 tMap((res) =>
                   _(res)
-                    ._(
-                      eMap((uploadResult) =>
-                        _(ImageField({ url: uploadResult.downloadUrl }))
-                          ._(Some)
-                          ._val()
-                      )
-                    )
-                    ._(eMapLeft(CToFieldUploadImageErr))
+                    ._(eMap((uploadResult) => Some(ImageField({ url: uploadResult.downloadUrl }))))
+                    ._(eMapLeft(uploadImageCToFieldErr))
                     ._val()
                 )
               )
               ._val()
-          : _(invalidTypeCToFieldErr({ col, field, fieldName }))._(teLeft)._val()
+          : teLeft(invalidTypeCToFieldErr({ col, field, fieldName }))
       )
     )
     ._(
       oGetOrElse<Task<Either<CToFieldErr, Some<ImageField>>>>(() =>
-        _(invalidTypeCToFieldErr({ col, field, fieldName }))._(teLeft)._val()
+        teLeft(invalidTypeCToFieldErr({ col, field, fieldName }))
       )
     )
     ._val();
@@ -78,13 +70,13 @@ export function rToImageField({
     ._(
       oMap((field) =>
         isImageFieldValue(field)
-          ? _(ImageField(field))._(toRightSome)._val()
-          : _(invalidTypeRToDocErr({ col, field, fieldName }))._(Left)._val()
+          ? toRightSome(ImageField(field))
+          : Left(invalidTypeRToDocErr({ col, field, fieldName }))
       )
     )
     ._(
       oGetOrElse<Either<RToDocErr, Some<ImageField>>>(() =>
-        _(invalidTypeRToDocErr({ col, field, fieldName }))._(Left)._val()
+        Left(invalidTypeRToDocErr({ col, field, fieldName }))
       )
     )
     ._val();

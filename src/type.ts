@@ -208,7 +208,7 @@ export function invalidTypeRToDocErr(p: {
   };
 }
 
-export function neverRToFieldErr(never: unknown): NeverRToDocErr {
+export function neverRToFieldErr(never: unknown): RToDocErr {
   return {
     _errorType: 'NeverErr',
     never,
@@ -305,28 +305,28 @@ export type CToFieldErr<PUIE extends PUploadImageErr = PUploadImageErr> =
 
 export function uploadImageCToFieldErr<PUIE extends PUploadImageErr>(
   uploadImageErr: PUIE
-): UploadImageCToFieldErr<PUIE> {
+): CToFieldErr<PUIE> {
   return {
     _errorType: 'UploadImageErr',
     uploadImageErr,
   };
 }
 
-export function userNotSignedInCToFieldErr(signInRequired: string): UserNotSignedInCToFieldErr {
+export function userNotSignedInCToFieldErr(signInRequired: string): CToFieldErr {
   return {
     _errorType: 'UserNotSignedInErr',
     signInRequired,
   };
 }
 
-export function rToDocCToFieldErr(rToDocErr: RToDocErr): RToDocCToFieldErr {
+export function rToDocCToFieldErr(rToDocErr: RToDocErr): CToFieldErr {
   return {
     _errorType: 'RToDocErr',
     rToDocErr,
   };
 }
 
-export function neverCToFieldErr(never: never): NeverCToFieldErr {
+export function neverCToFieldErr(never: never): CToFieldErr {
   return {
     _errorType: 'NeverErr',
     never,
@@ -403,9 +403,7 @@ export function cToFieldCreateDocErr<CTFE extends CToFieldErr>(err: CTFE): Creat
   return { _errorType: 'CToFieldErr', err };
 }
 
-export function pGetNewDocIdCreateDocErr<PGNIE extends PGetNewDocIdErr>(
-  err: PGNIE
-): CreateDocErr {
+export function pGetNewDocIdCreateDocErr<PGNIE extends PGetNewDocIdErr>(err: PGNIE): CreateDocErr {
   return { _errorType: 'PGetNewDocIdErr', err };
 }
 
@@ -448,15 +446,11 @@ export type DocStateErr<
   readonly _errorType: string;
 } & (CreateDocDocStateErr<CDE> | PReadDocDocStateErr<PRDE>);
 
-export function createDocDocStateErr<CDE extends CreateDocErr>(
-  createDocErr: CDE
-): DocStateErr {
+export function createDocDocStateErr<CDE extends CreateDocErr>(createDocErr: CDE): DocStateErr {
   return { _errorType: 'CreateDocErr', createDocErr };
 }
 
-export function pReadDocDocStateErr<PRDE extends PReadDocErr>(
-  readDocErr: PRDE
-): DocStateErr {
+export function pReadDocDocStateErr<PRDE extends PReadDocErr>(readDocErr: PRDE): DocStateErr {
   return { _errorType: 'PReadDocErr', readDocErr };
 }
 
@@ -516,33 +510,28 @@ export type DocState<
 export function containsErrDocState<E extends DocStateErr>(p: {
   readonly error: Left<E>;
   readonly revalidate: () => void;
-}): ContainsErrDocState<E> {
+}): DocState {
   return { ...p, state: 'ContainsErr' };
 }
 
-export function creatingDocState(): CreatingDocState {
+export function creatingDocState(): DocState {
   return { state: 'Creating' };
 }
 
-export function initializingDocState(): InitializingDocState {
+export function initializingDocState(): DocState {
   return { state: 'Initializing' };
 }
 
-export function keyIsEmptyDocState(): KeyIsEmptyDocState {
+export function keyIsEmptyDocState(): DocState {
   return { state: 'KeyIsEmpty' };
 }
 
-export function notExistsDocState<C extends CDoc>(
-  create: (ocDocData: C) => void
-): NotExistsDocState<C> {
+export function notExistsDocState(create: (ocDocData: CDoc) => void): DocState {
   return { create, state: 'NotExists' };
 }
 
-export function readyDocState<R extends RDoc>(p: {
-  readonly data: R;
-  readonly id: string;
-}): ReadyDocState<R> {
-  return { ...p, state: 'Ready' };
+export function readyDocState<R extends RDoc>(id: string): (data: R) => ReadyDocState<R> {
+  return (data) => ({ data, id, state: 'Ready' });
 }
 
 /**
@@ -686,7 +675,7 @@ export type AuthState<
   | LoadingUserDataAuthState
   | SignedInAuthState<ASE, URD>;
 
-export function InitializingAuthState(): InitializingAuthState {
+export function InitializingAuthState(): AuthState {
   return { state: 'initializing' };
 }
 
@@ -695,21 +684,21 @@ export function signedInAuthState<E extends AuthStateErr, URD extends RDoc>(p: {
   readonly signOut: () => void;
   readonly user: URD;
   readonly userId: string;
-}): SignedInAuthState<E, URD> {
+}): AuthState<E, URD> {
   return { ...p, state: 'signedIn' };
 }
 
 export function loadingUserDataAuthState(p: {
   readonly signOut: () => void;
   readonly userId: string;
-}): LoadingUserDataAuthState {
+}): AuthState {
   return { ...p, state: 'loadingUserData' };
 }
 
 export function signedOutAuthState<E extends AuthStateErr, SIO>(p: {
   readonly error?: Left<E>;
   readonly signIn: (option: SIO) => void;
-}): SignedOutAuthState<E, SIO> {
+}): AuthState<E, SIO> {
   return {
     ...p,
     state: 'signedOut',

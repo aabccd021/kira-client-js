@@ -34,13 +34,13 @@ export function rToCreationTimeField({
     ._(
       oMap((field) =>
         field instanceof Date
-          ? _(DateField(field))._(toRightSome)._val()
-          : _(invalidTypeRToDocErr({ col, field, fieldName }))._(Left)._val()
+          ? _(field)._(DateField)._(toRightSome)._val()
+          : Left(invalidTypeRToDocErr({ col, field, fieldName }))
       )
     )
     ._(
       oGetOrElse<Either<RToDocErr, Some<DateField>>>(() =>
-        _(invalidTypeRToDocErr({ col, field, fieldName }))._(Left)._val()
+        Left(invalidTypeRToDocErr({ col, field, fieldName }))
       )
     )
     ._val();

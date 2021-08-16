@@ -256,14 +256,20 @@ export function teLeft<T>(t: T): Task<Left<T>> {
   return _(t)._(Left)._(Task)._val();
 }
 
-export function bind<A, B>(mapper: (b: B) => A): (t: B) => readonly [B, A] {
+export function bind2<T, A>(mapper: (b: A) => T): (t: A) => readonly [A, T] {
   return (b) => [b, mapper(b)];
 }
 
-export function bind2<A, B, C>(
-  mapper: (b: B, c: C) => A
-): (t: readonly [B, C]) => readonly [B, C, A] {
-  return ([b, c]) => [b, c, mapper(b, c)];
+export function bind3<T, A, B>(
+  mapper: (a: A, b: B) => T
+): (t: readonly [A, B]) => readonly [A, B, T] {
+  return (t) => [...t, mapper(...t)];
+}
+
+export function bind4<T, A, B, C>(
+  mapper: (a: A, b: B, c: C) => T
+): (t: readonly [A, B, C]) => readonly [A, B, C, T] {
+  return (t) => [...t, mapper(...t)];
 }
 
 export function eCompact2<E, B, A>([b, a]: readonly [Either<E, B>, Either<E, A>]): Either<
@@ -277,11 +283,35 @@ export function oCompact2<B, A>([b, a]: readonly [Option<B>, Option<A>]): Option
   return isSome(b) && isSome(a) ? Some([b.value, a.value]) : None();
 }
 
-export function oCompact3<B, C, A>([b, c, a]: readonly [Option<B>, Option<C>, Option<A>]): Option<
-  readonly [B, C, A]
+export function oCompact3<A, B, T>([a, b, t]: readonly [Option<A>, Option<B>, Option<T>]): Option<
+  readonly [A, B, T]
 > {
-  const prev = oCompact2([b, c]);
-  return isSome(a) && isSome(prev) ? Some(bind2<A, B, C>(() => a.value)(prev.value)) : None();
+  return _(oCompact2([a, b]))
+    ._(
+      oChain((prev) =>
+        _(t)
+          ._(oMap((t) => bind3<T, A, B>(() => t)(prev)))
+          ._val()
+      )
+    )
+    ._val();
+}
+
+export function oCompact4<A, B, C, T>([a, b, c, t]: readonly [
+  Option<A>,
+  Option<B>,
+  Option<C>,
+  Option<T>
+]): Option<readonly [A, B, C, T]> {
+  return _(oCompact3([a, b, c]))
+    ._(
+      oChain((prev) =>
+        _(t)
+          ._(oMap((t) => bind4<T, A, B, C>(() => t)(prev)))
+          ._val()
+      )
+    )
+    ._val();
 }
 
 export function oMap2<T, A, B>(
@@ -299,6 +329,12 @@ export function eMap2<T, E, A, B>(
 export function oMap3<T, A, B, C>(
   mapper: (a: A, b: B, c: C) => T
 ): (o: Option<readonly [A, B, C]>) => Option<T> {
+  return (option) => (isNone(option) ? option : Some(mapper(...option.value)));
+}
+
+export function oMap4<T, A, B, C, D>(
+  mapper: (a: A, b: B, c: C, d: D) => T
+): (o: Option<readonly [A, B, C, D]>) => Option<T> {
   return (option) => (isNone(option) ? option : Some(mapper(...option.value)));
 }
 
@@ -377,7 +413,7 @@ export function deCompact<E, T>(de: Dict<Either<E, NonNullable<T>>>): Either<E, 
     ._(
       dReduce(Right({}) as Either<E, Dict<T>>, (acc, value, key) =>
         _(acc)
-          ._(bind(() => value))
+          ._(bind2(() => value))
           ._(eCompact2)
           ._(eMap2((acc, value) => ({ ...acc, [key]: value })))
           ._val()
