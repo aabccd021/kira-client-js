@@ -799,11 +799,6 @@ export type MakeDocState = (key: DocKey) => State<DocState>;
 /**
  *
  */
-export type CreateNotExistsDocState = (key: DocKey) => NotExistsDocState;
-
-/**
- *
- */
 export type CreateContainsErrorDocState<DSE extends DocStateError = DocStateError> = (
   key: DocKey
 ) => (left: Left<DSE>) => DocState;
