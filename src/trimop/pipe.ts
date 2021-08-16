@@ -20,6 +20,35 @@ export function _<T>(t: T): C<T> {
   };
 }
 
+export type K<TR, T> = {
+  readonly _: <TR2>(mapper: (t: T) => TR) => K<TR2, TR>;
+  readonly value: (p: T) => TR;
+};
+
+export function K<TR, T>(mapper: (t: TR) => TR2): K<TR, T> {
+  return {
+    _: (mapper2) => K(mapper2(mapper)),
+    value: mapper,
+  };
+}
+
+export type Z<TPrev, TInit> = {
+  readonly _: <TNext>(mapper: (t: TPrev) => TNext) => Z<TNext, TInit>;
+  readonly value: (p: TInit) => TPrev;
+};
+
+export function ZM<TEnd, TInit>(mapper: (t: TInit) => TEnd): Z<TEnd, TInit> {
+  return {
+    _: (mapper) => mapper(),
+    value: 
+  };
+}
+
+const raaaaaaaa: (p: string) => boolean = ZM<number, string>((a) => a.length)._((x) => x > 0).value;
+const raaaaa: (p: string) => number = ZM<number, string>((a) => a.length).value;
+
+const x = K<number, string>((a) => a.length)._((x) => x > 0).value;
+
 // export type Z<TR, T> = {
 //   readonly _: <TR2>(mapper: (t: TR) => TR2) => Z<TR, T>;
 //   readonly eval: (t: T) => TR;
