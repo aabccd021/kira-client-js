@@ -3,14 +3,13 @@ import { Either, Left, Some } from 'trimop';
 
 import {
   _,
-  eMap,
-  eMapLeft,
   oeGetOrLeft,
   oMap,
   oteGetOrLeft,
   Task,
   teLeft,
-  tMap,
+  teMap,
+  teMapLeft,
   toRightSome,
   toTaskRightSome,
 } from '../trimop/pipe';
@@ -41,14 +40,8 @@ export function cToImageField<PUIE extends PUploadImageErr>({
           ? toTaskRightSome(ImageField({ url: field }))
           : field instanceof File
           ? _(pUploadImage({ col, fieldName, file: field, id }))
-              ._(
-                tMap((res) =>
-                  _(res)
-                    ._(eMap((uploadResult) => Some(ImageField({ url: uploadResult.downloadUrl }))))
-                    ._(eMapLeft(uploadImageCToFieldErr))
-                    ._val()
-                )
-              )
+              ._(teMap((uploadResult) => Some(ImageField({ url: uploadResult.downloadUrl }))))
+              ._(teMapLeft(uploadImageCToFieldErr))
               ._val()
           : teLeft(invalidTypeCToFieldErr({ col, field, fieldName }))
       )
