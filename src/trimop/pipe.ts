@@ -159,6 +159,10 @@ export function oMap<TResult, T>(mapper: (t: T) => TResult): OMap<TResult, T> {
   return (option) => (isNone(option) ? option : Some(mapper(option.value)));
 }
 
+export function oMapC<TResult, T>(mapper: (t: T) => Pipe<TResult>): OMap<TResult, T> {
+  return (option) => (isNone(option) ? option : Some(mapper(option.value)._val()));
+}
+
 export function oChain<TResult, T>(mapper: (t: T) => Option<TResult>): OMap<TResult, T> {
   return (option) => _(option)._(oMap(mapper))._(oFlatten)._val();
 }

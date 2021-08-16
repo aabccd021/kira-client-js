@@ -209,10 +209,7 @@ export function buildSetDocState({
                 ._(oCompact3)
                 ._(
                   opMap3((actionTrigger, before, after) =>
-                    runTrigger({
-                      actionTrigger,
-                      snapshot: { after, before, id: newDocState.id },
-                    })
+                    runTrigger({ actionTrigger, snapshot: { after, before, id: newDocState.id } })
                   )
                 )
                 ._val()
@@ -221,10 +218,7 @@ export function buildSetDocState({
                 ._(oCompact2)
                 ._(
                   opMap2((actionTrigger, doc) =>
-                    runTrigger({
-                      actionTrigger,
-                      snapshot: { doc, id: newDocState.id },
-                    })
+                    runTrigger({ actionTrigger, snapshot: { doc, id: newDocState.id } })
                   )
                 )
                 ._val()
@@ -269,10 +263,7 @@ export function deleteDocState({
     ._(oCompact4)
     ._(
       opMap4((docState, doc, actionTrigger, runTrigger) =>
-        runTrigger({
-          actionTrigger,
-          snapshot: { doc, id: docState.id },
-        })
+        runTrigger({ actionTrigger, snapshot: { doc, id: docState.id } })
       )
     )
     ._(oMap(tDo))

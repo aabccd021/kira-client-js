@@ -101,10 +101,9 @@ export type PSetDocErr = { readonly _errorType: 'PSetDocErr' };
 /**
  *
  */
-export type PSetDoc<E extends PSetDocErr = PSetDocErr, R = unknown> = (param: {
-  readonly doc: Doc;
-  readonly key: DocKey;
-}) => Task<Either<E, R>>;
+export type PSetDoc<E extends PSetDocErr = PSetDocErr, R = unknown> = (
+  key: DocKey
+) => (doc: Doc) => Task<Either<E, R>>;
 
 /**
  *

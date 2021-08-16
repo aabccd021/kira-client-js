@@ -79,12 +79,8 @@ export function buildCreateDoc({
       ._(oteGetOrLeft(() => unknownColCreateDocErr(col)))
       ._(
         teChain((snapshot) =>
-          _(
-            pSetDoc({
-              doc: snapshot.doc,
-              key: { col, id: snapshot.id },
-            })
-          )
+          _(snapshot.doc)
+            ._(pSetDoc({ col, id: snapshot.id }))
             ._(teMapLeft(pSetDocCreateDocErr))
             ._(teMap(() => snapshot))
             ._val()
