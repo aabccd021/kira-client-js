@@ -2,7 +2,7 @@
 // import { BuildDraft } from 'kira-nosql';
 
 // import { buildSetDocState, getDocState } from '../../listenable/doc';
-// import { _, bind, bind2, tDo, tMap } from '../../trimop/pipe';
+// import { _, bind, bind2, tDo, T.map } from '../../trimop/pipe';
 // import {
 //   ContainsErrDocState,
 //   CreateContainsErrDocState,
@@ -56,7 +56,7 @@
 //           ._(bind2(initialFetchDoc))
 //           ._(([key, __, newDocState]) =>
 //             _(newDocState)
-//               ._(tMap(setDocState(key)))
+//               ._(T.map(setDocState(key)))
 //               ._(tDo)
 //               ._val()
 //           )

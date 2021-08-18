@@ -1,24 +1,14 @@
 import { Spec } from 'kira-core';
 
 import { docSnapshot } from '../../core';
-import {
-  _,
-  deCompact,
-  dEntry,
-  dFromEntry,
-  dLookup,
-  dMapEntries,
-  doCompact,
-  oGetOrElse,
-  oMap,
-  oteGetOrLeft,
-  teChain,
-  teMap,
-  teMapLeft,
-  teRight,
-  tMap,
-  tParallel,
-} from '../../trimop/pipe';
+import * as D from '../../trimop/dict';
+import * as DE from '../../trimop/dict-either';
+import * as DO from '../../trimop/dict-option';
+import { _ } from '../../trimop/function';
+import * as O from '../../trimop/option';
+import * as OTE from '../../trimop/option-task-either';
+import * as T from '../../trimop/task';
+import * as TE from '../../trimop/task-either';
 import {
   CreateDoc,
   CToField,
@@ -44,47 +34,47 @@ export function buildCreateDoc({
 }): CreateDoc {
   return ({ cDoc, col, id: givenId }) =>
     _(spec)
-      ._(dLookup(col))
+      ._(D.lookup(col))
       ._(
-        oMap((colSpec) =>
+        O.map((colSpec) =>
           _(givenId)
-            ._(oMap(teRight))
-            ._(oGetOrElse(() => pGetNewDocId(col)))
-            ._(teMapLeft(pGetNewDocIdCreateDocErr))
+            ._(O.map(TE.right))
+            ._(O.getOrElse(() => pGetNewDocId(col)))
+            ._(TE.mapLeft(pGetNewDocIdCreateDocErr))
             ._(
-              teChain((id) =>
+              TE.chain((id) =>
                 _(colSpec)
                   ._(
-                    dMapEntries((fieldSpec, fieldName) =>
+                    D.mapEntries((fieldSpec, fieldName) =>
                       _(cDoc)
-                        ._(dLookup(fieldName))
+                        ._(D.lookup(fieldName))
                         ._(cToFieldCtx({ col, fieldName, id }))
                         ._(cToField(fieldSpec))
-                        ._(tMap(dEntry(fieldName)))
-                        ._val()
+                        ._(T.map(D.entry(fieldName)))
+                        ._v()
                     )
                   )
-                  ._(tParallel)
-                  ._(tMap(dFromEntry))
-                  ._(tMap(deCompact))
-                  ._(teMapLeft(cToFieldCreateDocErr))
-                  ._(teMap(doCompact))
-                  ._(teMap(docSnapshot(id)))
-                  ._val()
+                  ._(T.parallel)
+                  ._(T.map(D.fromEntry))
+                  ._(T.map(DE.compact))
+                  ._(TE.mapLeft(cToFieldCreateDocErr))
+                  ._(TE.map(DO.compact))
+                  ._(TE.map(docSnapshot(id)))
+                  ._v()
               )
             )
-            ._val()
+
+            ._v()
         )
       )
-      ._(oteGetOrLeft(() => unknownColCreateDocErr(col)))
+      ._(OTE.getOrLeft(() => unknownColCreateDocErr(col)))
       ._(
-        teChain((snapshot) =>
+        TE.chainFirst((snapshot) =>
           _(snapshot.doc)
             ._(pSetDoc({ col, id: snapshot.id }))
-            ._(teMapLeft(pSetDocCreateDocErr))
-            ._(teMap(() => snapshot))
-            ._val()
+            ._(TE.mapLeft(pSetDocCreateDocErr))
+            ._v()
         )
       )
-      ._val();
+      ._v();
 }

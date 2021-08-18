@@ -6,8 +6,18 @@ import { Spec } from 'kira-core';
 import { BuildDraft, getTrigger, Trigger } from 'kira-nosql';
 import { getStateController, None, Option, Some } from 'trimop';
 
-import { _, doEffect, oGetOrElse } from './trimop/pipe';
 import { Unsubscribe } from './type';
+import * as D from '../trimop/dict';
+import * as E from '../trimop/either';
+import { _, flow } from '../trimop/function';
+import * as O from '../trimop/option';
+import * as OE from '../trimop/option-either';
+import * as OP from '../trimop/option-tuple';
+import * as T from '../trimop/task';
+import * as TE from '../trimop/task-either';
+import * as P from '../trimop/tuple';
+import * as PO from '../trimop/tuple-option';
+i
 
 const cachedTrigger = getStateController<Option<Trigger>>(None());
 
@@ -25,11 +35,11 @@ export function getCachedTrigger({
   readonly spec: Spec;
 }): Trigger {
   return _(cachedTrigger.get())
-    ._(oGetOrElse(() => getTrigger({ buildDraft, spec })))
+    ._(O.getOrElse(() => getTrigger({ buildDraft, spec })))
     ._(
       doEffect((trigger) => {
         cachedTrigger.set(Some(trigger));
       })
     )
-    ._val();
+    ._v();
 }

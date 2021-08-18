@@ -1,5 +1,6 @@
 import { DocToR, GetDocStateCtxIfAbsent, PReadDoc, pReadDocDocStateErr, PReadDocErr } from '../..';
-import { _, teGetOrElse, teMap, teMapLeft } from '../../trimop/pipe';
+import { _ } from '../../trimop/function';
+import * as TE from '../../trimop/task-either';
 import { containsErrDocStateCtx, notExistsDocStateCtx, readyDocStateCtx } from '../../type';
 
 export function buildGetDocStateCtxIfAbsent<PRDE extends PReadDocErr>({
@@ -13,13 +14,13 @@ export function buildGetDocStateCtxIfAbsent<PRDE extends PReadDocErr>({
     _(key)
       ._(pReadDoc)
       ._(
-        teMap((remoteDoc) =>
+        TE.map((remoteDoc) =>
           remoteDoc.state === 'exists'
-            ? _(remoteDoc.data)._(docToR)._(readyDocStateCtx(key.id))._val()
+            ? _(remoteDoc.data)._(docToR)._(readyDocStateCtx(key.id))._v()
             : notExistsDocStateCtx(key)
         )
       )
-      ._(teMapLeft(pReadDocDocStateErr))
-      ._(teGetOrElse(containsErrDocStateCtx(key)))
-      ._val();
+      ._(TE.mapLeft(pReadDocDocStateErr))
+      ._(TE.getOrElse(containsErrDocStateCtx(key)))
+      ._v();
 }

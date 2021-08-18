@@ -9,8 +9,8 @@ import {
   doCompact,
   eMap,
   oeGetOrLeft,
-  oMap,
-} from './trimop/pipe';
+  O.map,
+} from './trimop/function';
 import { RToDoc, RToField, rToFieldCtx, unknownColRToDocErr } from './type';
 
 export function buildRToDoc(spec: Spec, rToField: RToField): RToDoc {
@@ -18,7 +18,7 @@ export function buildRToDoc(spec: Spec, rToField: RToField): RToDoc {
     _(spec)
       ._(dLookup(col))
       ._(
-        oMap((colSpec) =>
+        O.map((colSpec) =>
           _(colSpec)
             ._(dFilter((_, fieldName) => fieldName[0] !== '_'))
             ._(
@@ -27,14 +27,14 @@ export function buildRToDoc(spec: Spec, rToField: RToField): RToDoc {
                   ._(dLookup(fieldName))
                   ._(rToFieldCtx({ col, fieldName }))
                   ._(rToField(fieldSpec))
-                  ._val()
+                  ._v()
               )
             )
             ._(deCompact)
             ._(eMap(doCompact))
-            ._val()
+            ._v()
         )
       )
       ._(oeGetOrLeft(() => unknownColRToDocErr(col)))
-      ._val();
+      ._v();
 }

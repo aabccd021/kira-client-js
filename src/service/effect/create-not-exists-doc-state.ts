@@ -17,7 +17,7 @@
 //   ReadyDocState,
 //   RToDoc,
 // } from '../..';
-// import { _, doEffect, tDo, teGetOrElse, teMap, teMapLeft, tMap } from '../../trimop/pipe';
+// import { _, doEffect, tDo, teGetOrElse, teMap, teMapLeft, T.map } from '../../trimop/pipe';
 // // eslint-disable-next-line import/no-cycle
 // import { buildCreateContainsErrDocState } from './create-contains-error-doc-state';
 
@@ -73,7 +73,7 @@
 //           ._(teMap(ReadyDocState))
 //           ._(teMapLeft(CreateDocDocStateErr))
 //           ._(teGetOrElse(createContainsErrDocState(key)))
-//           ._(tMap(setDocState(key)))
+//           ._(T.map(setDocState(key)))
 //           ._(tDo)
 //           ._val();
 //       },

@@ -1,7 +1,7 @@
 import { CountFieldSpec, NumberField } from 'kira-core';
 import { Either, Left, None, Some } from 'trimop';
 
-import { _, oeGetOrLeft, oeGetOrRight, oMap, Task, toRightSome } from '../trimop/pipe';
+import { _, oeGetOrLeft, oeGetOrRight, O.map, Task, toRightSome } from '../trimop/function';
 import {
   CToFieldCtx,
   CToFieldErr,
@@ -18,10 +18,10 @@ export function cToCountField({
   readonly fieldSpec: CountFieldSpec;
 }): Task<Either<CToFieldErr, None>> {
   return _(field)
-    ._(oMap(() => Left(invalidTypeCToFieldErr({ col, field, fieldName }))))
+    ._(O.map(() => Left(invalidTypeCToFieldErr({ col, field, fieldName }))))
     ._(oeGetOrRight(() => None()))
     ._(Task)
-    ._val();
+    ._v();
 }
 
 export function rToCountField({
@@ -32,12 +32,12 @@ export function rToCountField({
 }): Either<RToDocErr, Some<NumberField>> {
   return _(field)
     ._(
-      oMap((field) =>
+      O.map((field) =>
         typeof field === 'number'
-          ? _(NumberField(field))._(toRightSome)._val()
-          : _(invalidTypeRToDocErr({ col, field, fieldName }))._(Left)._val()
+          ? _(NumberField(field))._(toRightSome)._v()
+          : _(invalidTypeRToDocErr({ col, field, fieldName }))._(Left)._v()
       )
     )
     ._(oeGetOrLeft(() => invalidTypeRToDocErr({ col, field, fieldName })))
-    ._val();
+    ._v();
 }

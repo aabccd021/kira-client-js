@@ -1,7 +1,7 @@
 import { CreationTimeFieldSpec, DateField } from 'kira-core';
 import { Either, Left, None, Some } from 'trimop';
 
-import { _, oeGetOrLeft, oeGetOrRight, oMap, Task, toRightSome } from '../trimop/pipe';
+import { _, oeGetOrLeft, oeGetOrRight, O.map, Task, toRightSome } from '../trimop/function';
 import {
   CToFieldCtx,
   CToFieldErr,
@@ -18,10 +18,10 @@ export function cToCreationTimeField({
   readonly fieldSpec: CreationTimeFieldSpec;
 }): Task<Either<CToFieldErr, None>> {
   return _(field)
-    ._(oMap(() => Left(invalidTypeCToFieldErr({ col, field, fieldName }))))
+    ._(O.map(() => Left(invalidTypeCToFieldErr({ col, field, fieldName }))))
     ._(oeGetOrRight(() => None()))
     ._(Task)
-    ._val();
+    ._v();
 }
 
 export function rToCreationTimeField({
@@ -32,12 +32,12 @@ export function rToCreationTimeField({
 }): Either<RToDocErr, Some<DateField>> {
   return _(field)
     ._(
-      oMap((field) =>
+      O.map((field) =>
         field instanceof Date
-          ? _(field)._(DateField)._(toRightSome)._val()
+          ? _(field)._(DateField)._(toRightSome)._v()
           : Left(invalidTypeRToDocErr({ col, field, fieldName }))
       )
     )
     ._(oeGetOrLeft(() => invalidTypeRToDocErr({ col, field, fieldName })))
-    ._val();
+    ._v();
 }

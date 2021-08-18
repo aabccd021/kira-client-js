@@ -1,7 +1,7 @@
 import { isImageFieldValue, RefField, RefFieldSpec } from 'kira-core';
 import { Either, Left, Option, Some } from 'trimop';
 
-import { _, eMap, eMapLeft, oeGetOrLeft, oMap, Task } from '../trimop/pipe';
+import { _, eMap, eMapLeft, oeGetOrLeft, O.map, Task } from '../trimop/function';
 import {
   CField,
   CToFieldCtx,
@@ -46,34 +46,34 @@ export function cToRefField({
 }): Task<Either<CToFieldErr, Some<RefField>>> {
   return _(field)
     ._(
-      oMap((rDoc) =>
+      O.map((rDoc) =>
         fieldSpec.isOwner
           ? _(getAuthState())
               ._(
-                oMap((auth) =>
+                O.map((auth) =>
                   auth.state === 'signedIn'
                     ? _(auth.user)
                         ._(rToDoc(col))
                         ._(eMap((doc) => Some(RefField({ doc, id: auth.userId }))))
                         ._(eMapLeft(rToDocCToFieldErr))
-                        ._val()
+                        ._v()
                     : Left(userNotSignedInCToFieldErr(`create ${col} doc`))
                 )
               )
               ._(oeGetOrLeft(() => userNotSignedInCToFieldErr(`create ${col} doc`)))
-              ._val()
+              ._v()
           : isRefRField(rDoc)
           ? _(rDoc)
               ._(rToDoc(col))
               ._(eMap((doc) => Some(RefField({ doc, id: rDoc._id }))))
               ._(eMapLeft(rToDocCToFieldErr))
-              ._val()
+              ._v()
           : Left(invalidTypeCToFieldErr({ col, field: rDoc, fieldName }))
       )
     )
     ._(oeGetOrLeft(() => invalidTypeCToFieldErr({ col, field, fieldName })))
     ._(Task)
-    ._val();
+    ._v();
 }
 
 export function rToRefField({
@@ -86,15 +86,15 @@ export function rToRefField({
 }): Either<RToDocErr, Option<RefField>> {
   return _(field)
     ._(
-      oMap((field) =>
+      O.map((field) =>
         isRefRField(field)
           ? _(field)
               ._(rToDoc(col))
               ._(eMap((doc) => Some(RefField({ doc, id: field._id }))))
-              ._val()
+              ._v()
           : Left(invalidTypeRToDocErr({ col, field, fieldName }))
       )
     )
     ._(oeGetOrLeft(() => invalidTypeRToDocErr({ col, field, fieldName })))
-    ._val();
+    ._v();
 }

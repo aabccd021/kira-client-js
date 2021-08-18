@@ -1,7 +1,7 @@
 import { Doc, DocKey, DocSnapshot, Field, FieldSpec } from 'kira-core';
 import { Dict, Either, Left, Option } from 'trimop';
 
-import { Task } from './trimop/pipe';
+import { Task } from './trimop/type';
 
 /**
  *
